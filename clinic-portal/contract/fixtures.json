@@ -1,0 +1,64 @@
+{
+  "login": {
+    "access_token": "mock-token",
+    "role": "caregiver",
+    "user_id": 2
+  },
+  "extraction": {
+    "medicines": [
+      {"name": "Metformin", "dose": "500 mg", "times": ["08:00", "20:00"], "days": 30, "instructions": "after meals", "unclear": false},
+      {"name": "Amlodipine", "dose": "5 mg", "times": ["09:00"], "days": 30, "instructions": null, "unclear": true}
+    ],
+    "warnings": ["Dose of Amlodipine is hard to read"]
+  },
+  "prescription_created": {"id": 11, "status": "draft", "version": 1},
+  "prescription_confirmed": {"id": 11, "status": "active", "doses_created": 90},
+  "doses": [
+    {"id": 101, "medicine": "Metformin", "dose": "500 mg", "scheduled_at": "2026-10-05T03:00:00Z", "status": "CONFIRMED", "reminder_count": 1},
+    {"id": 102, "medicine": "Amlodipine", "dose": "5 mg", "scheduled_at": "2026-10-05T04:00:00Z", "status": "MISSED", "reminder_count": 3},
+    {"id": 103, "medicine": "Metformin", "dose": "500 mg", "scheduled_at": "2026-10-05T15:00:00Z", "status": "NOTIFIED", "reminder_count": 2},
+    {"id": 104, "medicine": "Metformin", "dose": "500 mg", "scheduled_at": "2026-10-06T03:00:00Z", "status": "SCHEDULED", "reminder_count": 0}
+  ],
+  "dose_reply": {"id": 103, "status": "CONFIRMED"},
+  "caregiver_patients": [
+    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "today": {"taken": 1, "total": 3, "missed": 1}, "adherence_7d": 86},
+    {"id": 3, "name": "Amina Bibi", "phone": "923007654321", "today": {"taken": 2, "total": 2, "missed": 0}, "adherence_7d": 100}
+  ],
+  "doctor_patients": [
+    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "link_id": 7, "adherence_7d": 86}
+  ],
+  "doctor_link_created": {"id": 7, "status": "pending", "patient_id": 1},
+  "doctor_link_consent": {"id": 7, "status": "active"},
+  "doctor_link_revoked": {"id": 7, "status": "revoked"},
+  "invite_code": {"invite_code": "ALI-4821"},
+  "active_prescriptions": [
+    {"id": 11, "status": "active", "version": 1, "medicines": [
+      {"name": "Metformin", "dose": "500 mg", "times": ["08:00", "20:00"], "days": 30, "instructions": "after meals"}
+    ]}
+  ],
+  "doctor_change_created": {"id": 12, "status": "waiting_patient", "version": 2},
+  "weekly_report": {
+    "patient_name": "Ali Khan",
+    "week_start": "2026-09-28",
+    "week_end": "2026-10-04",
+    "adherence": 86,
+    "rows": [
+      {"date": "2026-09-28", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-09-29", "medicine": "Metformin 500 mg", "status": "SKIPPED"},
+      {"date": "2026-09-30", "medicine": "Amlodipine 5 mg", "status": "MISSED"}
+    ]
+  },
+  "bot_send_request": {
+    "phone": "923001234567",
+    "text": "Time for Metformin 500 mg (8:00 AM)",
+    "buttons": [
+      {"id": "taken:103", "title": "Taken"},
+      {"id": "skip:103", "title": "Skip"},
+      {"id": "snooze:103", "title": "Snooze 15 min"}
+    ],
+    "template": "dose_reminder"
+  },
+  "bot_send_response": {"sent": true},
+  "error_403": {"detail": "Access to this patient has ended"},
+  "error_422_snooze": {"detail": "Snooze already used for this dose"}
+}

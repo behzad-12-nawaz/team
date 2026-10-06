@@ -1,4 +1,5 @@
-﻿import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Navbar } from "../components/Navbar";
 
@@ -9,12 +10,26 @@ export function Settings() {
   const [patientLoading, setPatientLoading] = useState(false);
   const [patientSuccess, setPatientSuccess] = useState("");
   const [patientError, setPatientError] = useState("");
+  const [linkedPatients, setLinkedPatients] = useState([]);
 
   // Alert Mode state
   const [alertMode, setAlertMode] = useState("every");
   const [alertLoading, setAlertLoading] = useState(false);
   const [alertSuccess, setAlertSuccess] = useState("");
   const [alertError, setAlertError] = useState("");
+
+  const loadLinkedPatients = async () => {
+    try {
+      const data = await api("/caregiver/patients");
+      if (Array.isArray(data)) setLinkedPatients(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadLinkedPatients();
+  }, []);
 
   const handleAddPatient = async (e) => {
     e.preventDefault();
@@ -25,14 +40,20 @@ export function Settings() {
     try {
       // Phone numbers: digits only with country code, e.g. 923001234567
       const cleanPhone = phone.replace(/\D/g, "");
+      if (!cleanPhone || cleanPhone.length < 10) {
+        throw new Error("Please enter a valid phone number with country code (e.g. 923001234567)");
+      }
+
       const res = await api("/caregiver/patients", {
         method: "POST",
-        body: JSON.stringify({ name, phone: cleanPhone }),
+        body: JSON.stringify({ name: name.trim(), phone: cleanPhone }),
       });
 
-      setPatientSuccess(`Patient "${name}" linked successfully! (ID: ${res.id})`);
+      setPatientSuccess(`Patient "${name.trim()}" linked successfully! (ID: #${res.id})`);
       setName("");
       setPhone("");
+      // Refresh linked patients list
+      await loadLinkedPatients();
     } catch (err) {
       setPatientError(err.message || "Failed to add patient.");
     } finally {
@@ -65,13 +86,24 @@ export function Settings() {
       <Navbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Caregiver Settings
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage linked loved ones and configure your WhatsApp notification preferences
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Caregiver Settings
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Manage linked loved ones and configure your WhatsApp notification preferences
+            </p>
+          </div>
+          <Link
+            to="/patients"
+            className="inline-flex items-center px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-xs transition-colors self-start sm:self-auto"
+          >
+            <svg className="w-4 h-4 mr-1.5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Patients List
+          </Link>
         </div>
 
         <div className="space-y-8">
@@ -91,8 +123,17 @@ export function Settings() {
 
             <form onSubmit={handleAddPatient} className="mt-6 space-y-5">
               {patientSuccess && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 font-medium">
-                  ✓ {patientSuccess}
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2 font-medium">
+                    <span>✓</span>
+                    <span>{patientSuccess}</span>
+                  </div>
+                  <Link
+                    to="/patients"
+                    className="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors self-start sm:self-auto"
+                  >
+                    View in Patients List →
+                  </Link>
                 </div>
               )}
               {patientError && (
@@ -118,7 +159,7 @@ export function Settings() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    WhatsApp Phone Number (Digits with Country Code)
+                    WhatsApp Phone Number
                   </label>
                   <input
                     type="text"
@@ -129,7 +170,7 @@ export function Settings() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm shadow-xs"
                   />
                   <span className="text-[11px] text-slate-400 mt-1 block">
-                    Example: 923001234567 for Pakistan
+                    Digits with country code (e.g. 923001234567 for Pakistan)
                   </span>
                 </div>
               </div>
@@ -140,10 +181,43 @@ export function Settings() {
                   disabled={patientLoading}
                   className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {patientLoading ? "Adding Patient..." : "Link Patient"}
+                  {patientLoading ? "Adding Patient..." : "+ Link Patient Now"}
                 </button>
               </div>
             </form>
+
+            {/* Currently Linked Patients List */}
+            {linkedPatients.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-slate-100">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                  Currently Linked Patients ({linkedPatients.length})
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {linkedPatients.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 font-bold text-sm flex items-center justify-center">
+                          {p.name?.charAt(0) || "P"}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900">{p.name}</div>
+                          <div className="text-[11px] text-slate-500 font-mono">+{p.phone}</div>
+                        </div>
+                      </div>
+                      <Link
+                        to={`/patient/${p.id}`}
+                        className="text-xs font-semibold text-teal-700 hover:text-teal-800"
+                      >
+                        View &rarr;
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Alert Preferences Section */}

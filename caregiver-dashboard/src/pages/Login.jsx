@@ -37,9 +37,9 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#0F172A] flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 text-white shadow-xl shadow-teal-500/25 mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#1E3A8A] to-[#2563EB] text-white shadow-xl shadow-blue-500/25 mb-4">
           <svg className="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
@@ -47,7 +47,7 @@ export function Login() {
         <h1 className="text-3xl font-extrabold text-white tracking-tight">
           DoseCare
         </h1>
-        <p className="mt-2 text-sm text-teal-200">
+        <p className="mt-2 text-sm text-blue-100">
           Caregiver Portal — Monitor loved ones & medication adherence
         </p>
       </div>
@@ -55,16 +55,16 @@ export function Login() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white/95 backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-white/20">
           {/* Quick Demo Credentials Info Banner */}
-          <div className="mb-6 p-3.5 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-900">
-            <div className="font-bold flex items-center mb-1 text-teal-800">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+          <div className="mb-6 p-3.5 rounded-xl bg-[#EFF6FF] border border-blue-200 text-xs text-[#1E3A8A]">
+            <div className="font-bold flex items-center mb-1 text-[#1E3A8A]">
+              <span className="w-2 h-2 rounded-full bg-[#2563EB] mr-2 animate-pulse"></span>
               Demo / Mock Credentials Pre-filled:
             </div>
-            <div className="font-mono text-[11px] text-teal-700">
+            <div className="font-mono text-[11px] text-[#2563EB]">
               Email: <strong>caregiver@dosecare.org</strong><br/>
               Password: <strong>password123</strong>
             </div>
-            <div className="mt-1 text-[11px] text-teal-600 italic">
+            <div className="mt-1 text-[11px] text-slate-500 italic">
               (Mock mode active: Aap koi bhi email/password enter karke Sign In kar sakte hain)
             </div>
           </div>
@@ -80,7 +80,7 @@ export function Login() {
             )}
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#1E293B] mb-1.5">
                 Caregiver Email
               </label>
               <input
@@ -89,12 +89,12 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="caregiver@dosecare.org"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-all shadow-xs"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] text-sm transition-all shadow-xs text-[#1E293B]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#1E293B] mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -104,21 +104,19 @@ export function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-4 pr-11 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-all shadow-xs"
+                  className="w-full pl-4 pr-11 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] text-sm transition-all shadow-xs text-[#1E293B]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-teal-600 transition-colors cursor-pointer focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#2563EB] transition-colors cursor-pointer focus:outline-none"
                 >
                   {showPassword ? (
-                    // Eye Off Icon
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                     </svg>
                   ) : (
-                    // Eye Open Icon
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -131,7 +129,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-teal-600/30 hover:shadow-teal-600/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 transition-all cursor-pointer"
+              className="w-full mt-2 py-3.5 px-4 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-blue-900 hover:to-blue-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563EB] disabled:opacity-50 transition-all cursor-pointer"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -151,7 +149,7 @@ export function Login() {
             <button
               type="button"
               onClick={() => handleLogin()}
-              className="text-xs text-teal-700 hover:text-teal-800 font-semibold underline cursor-pointer"
+              className="text-xs text-[#2563EB] hover:text-[#1E3A8A] font-semibold underline cursor-pointer"
             >
               ⚡ One-Click Demo Direct Login
             </button>

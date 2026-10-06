@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
 import { api } from "../api/client";
@@ -16,14 +16,12 @@ export function PatientDetail() {
   const loadData = useCallback(async () => {
     try {
       setError("");
-      // Fetch patients to find matching name/meta
       const patientsList = await api("/caregiver/patients");
       const currentPatient = Array.isArray(patientsList)
         ? patientsList.find((p) => String(p.id) === String(id))
         : null;
       setPatient(currentPatient || { id, name: `Patient #${id}`, phone: "923001234567" });
 
-      // Fetch doses for patient: GET /patients/{id}/doses
       const dosesData = await api(`/patients/${id}/doses`);
       setDoses(Array.isArray(dosesData) ? dosesData : []);
     } catch (err) {
@@ -39,14 +37,11 @@ export function PatientDetail() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  // Calculate adherence according to Step 4:
-  // const adherence = Math.round(100 * taken / Math.max(1, taken + missed + skipped));
   const takenCount = doses.filter((d) => d.status === "CONFIRMED" || d.status === "CONFIRMED_LATE").length;
   const missedCount = doses.filter((d) => d.status === "MISSED").length;
   const skippedCount = doses.filter((d) => d.status === "SKIPPED").length;
   const adherence = Math.round((100 * takenCount) / Math.max(1, takenCount + missedCount + skippedCount));
 
-  // Format UTC ISO to Pakistan Time (UTC+5)
   const formatPKTTime = (isoString) => {
     try {
       const date = new Date(isoString);
@@ -61,7 +56,6 @@ export function PatientDetail() {
     }
   };
 
-  // Mock weekly chart data matching sample trends
   const weeklyChartData = [
     { day: "Mon", taken: 3, missed: 0, skipped: 0 },
     { day: "Tue", taken: 2, missed: 1, skipped: 0 },
@@ -72,10 +66,8 @@ export function PatientDetail() {
     { day: "Sun", taken: takenCount || 2, missed: missedCount || 1, skipped: skippedCount || 0 },
   ];
 
-  // 30-day adherence calendar simulator
   const calendarDays = Array.from({ length: 30 }, (_, i) => {
     const dayNum = 30 - i;
-    // mock realistic calendar distribution
     let status = "CONFIRMED";
     if (dayNum === 2 || dayNum === 14) status = "MISSED";
     else if (dayNum === 8 || dayNum === 22) status = "SKIPPED";
@@ -89,7 +81,6 @@ export function PatientDetail() {
         method: "POST",
         body: JSON.stringify({ action }),
       });
-      // Refresh local list
       await loadData();
     } catch (err) {
       alert(`Action failed: ${err.message}`);
@@ -99,14 +90,14 @@ export function PatientDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <Link
             to="/patients"
-            className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-teal-700 transition-colors mb-3"
+            className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-[#2563EB] transition-colors mb-3"
           >
             <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -116,11 +107,11 @@ export function PatientDetail() {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 rounded-2xl bg-teal-600 text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-teal-600/20">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#1E3A8A] to-[#2563EB] text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 {patient?.name?.charAt(0) || "P"}
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B] tracking-tight">
                   {patient?.name || `Patient #${id}`}
                 </h1>
                 <p className="text-sm text-slate-500 font-mono mt-0.5">
@@ -132,7 +123,7 @@ export function PatientDetail() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={loadData}
-                className="inline-flex items-center px-3.5 py-2 text-sm font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
+                className="inline-flex items-center px-3.5 py-2 text-sm font-semibold rounded-xl bg-white border border-slate-200 text-[#1E293B] hover:bg-slate-50 shadow-xs cursor-pointer"
               >
                 <svg className="w-4 h-4 mr-1.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -145,7 +136,7 @@ export function PatientDetail() {
 
         {loading ? (
           <div className="py-20 text-center">
-            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-teal-500 border-t-transparent"></div>
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#2563EB] border-t-transparent"></div>
             <p className="mt-4 text-sm text-slate-600 font-medium">Loading doses & adherence...</p>
           </div>
         ) : error ? (
@@ -172,7 +163,7 @@ export function PatientDetail() {
                   }`}>
                     {adherence}%
                   </span>
-                  <span className="text-xs font-semibold text-slate-500">Formula target: 80%+</span>
+                  <span className="text-xs font-semibold text-slate-500">Target: 80%+</span>
                 </div>
               </div>
 
@@ -192,7 +183,7 @@ export function PatientDetail() {
                 </span>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-4xl font-extrabold text-rose-600">{missedCount}</span>
-                  <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Requires attention</span>
+                  <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Attention needed</span>
                 </div>
               </div>
 
@@ -201,10 +192,10 @@ export function PatientDetail() {
                   Skipped / Scheduled
                 </span>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-4xl font-extrabold text-slate-700">
+                  <span className="text-4xl font-extrabold text-[#1E293B]">
                     {doses.length - takenCount - missedCount}
                   </span>
-                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">Today's plan</span>
+                  <span className="text-xs font-semibold text-[#1E3A8A] bg-[#EFF6FF] px-2 py-0.5 rounded-full border border-blue-100">Today's plan</span>
                 </div>
               </div>
             </div>
@@ -213,10 +204,10 @@ export function PatientDetail() {
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Today's Scheduled Doses</h2>
+                  <h2 className="text-lg font-bold text-[#1E293B]">Today's Scheduled Doses</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Times shown in Pakistan Standard Time (PKT)</p>
                 </div>
-                <span className="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-full">
+                <span className="text-xs font-bold text-[#1E3A8A] bg-[#EFF6FF] px-3 py-1 rounded-full border border-blue-200">
                   {doses.length} Doses Total
                 </span>
               </div>
@@ -228,25 +219,25 @@ export function PatientDetail() {
                   {doses.map((dose) => (
                     <div
                       key={dose.id}
-                      className="px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
+                      className="px-6 py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#F8FAFC]/80 transition-colors"
                     >
                       <div className="flex items-start sm:items-center space-x-4">
-                        <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0 border border-teal-100">
+                        <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center flex-shrink-0 border border-blue-200">
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <h3 className="text-base font-bold text-slate-900">{dose.medicine}</h3>
-                            <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                            <h3 className="text-base font-bold text-[#1E293B]">{dose.medicine}</h3>
+                            <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                               {dose.dose}
                             </span>
                           </div>
                           <div className="flex items-center space-x-3 text-xs text-slate-500 mt-1">
-                            <span>Scheduled: <strong className="text-slate-700">{formatPKTTime(dose.scheduled_at)}</strong></span>
+                            <span>Scheduled: <strong className="text-[#1E293B]">{formatPKTTime(dose.scheduled_at)}</strong></span>
                             <span>&bull;</span>
-                            <span>Reminders sent: <strong className="text-slate-700">{dose.reminder_count || 0} / 3</strong></span>
+                            <span>Reminders sent: <strong className="text-[#1E293B]">{dose.reminder_count || 0} / 3</strong></span>
                           </div>
                         </div>
                       </div>
@@ -285,7 +276,7 @@ export function PatientDetail() {
               <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">30-Day Adherence Calendar</h2>
+                    <h2 className="text-base font-bold text-[#1E293B]">30-Day Adherence Calendar</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Daily medication compliance log</p>
                   </div>
                   <div className="flex items-center space-x-2 text-[11px] font-semibold">
@@ -327,7 +318,7 @@ export function PatientDetail() {
               {/* Weekly Bar Chart (Recharts) */}
               <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                 <div className="mb-4">
-                  <h2 className="text-base font-bold text-slate-900">Weekly Performance Breakdown</h2>
+                  <h2 className="text-base font-bold text-[#1E293B]">Weekly Performance Breakdown</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Taken vs Missed vs Skipped doses per day</p>
                 </div>
 
@@ -339,7 +330,7 @@ export function PatientDetail() {
                       <YAxis allowDecimals={false} stroke="#64748b" fontSize={12} tickLine={false} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#0f172a",
+                          backgroundColor: "#1E293B",
                           borderRadius: "0.75rem",
                           color: "#fff",
                           border: "none",

@@ -1,0 +1,17 @@
+# Secrets (real values live in .env, never committed)
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node / frontend builds
+node_modules/
+
+# Backend reminder outbox (written by NOTIFIER=console)
+outbox.log
+
+# OS / editor noise
+.DS_Store
+*.swp

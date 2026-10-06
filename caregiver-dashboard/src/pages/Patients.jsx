@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Navbar } from "../components/Navbar";
@@ -57,6 +57,15 @@ export function Patients() {
               </svg>
               Refresh
             </button>
+            <Link
+              to="/settings"
+              className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-sm shadow-teal-600/20 hover:shadow-teal-600/30 transition-all cursor-pointer"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              + Add New Patient
+            </Link>
           </div>
         </div>
 

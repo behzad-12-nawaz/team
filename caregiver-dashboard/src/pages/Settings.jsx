@@ -121,20 +121,20 @@ export function Settings() {
               {patientSuccess && (
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center space-x-2 font-medium">
-                    <span>✓</span>
+                    <span>âœ“</span>
                     <span>{patientSuccess}</span>
                   </div>
                   <Link
                     to="/patients"
                     className="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors self-start sm:self-auto"
                   >
-                    View in Patients List →
+                    View in Patients List â†’
                   </Link>
                 </div>
               )}
               {patientError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-800 font-medium">
-                  ⚠ {patientError}
+                  âš  {patientError}
                 </div>
               )}
 
@@ -177,7 +177,7 @@ export function Settings() {
                   disabled={patientLoading}
                   className="px-5 py-2.5 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-blue-900 hover:to-blue-700 text-white rounded-xl text-sm font-semibold shadow-xs shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {patientLoading ? "Adding Patient..." : "+ Link Patient Now"}
+                  {patientLoading ? "Adding Patient..." : "Link Patient Now"}
                 </button>
               </div>
             </form>
@@ -233,12 +233,12 @@ export function Settings() {
             <form onSubmit={handleSaveSettings} className="mt-6 space-y-5">
               {alertSuccess && (
                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 font-medium">
-                  ✓ {alertSuccess}
+                  âœ“ {alertSuccess}
                 </div>
               )}
               {alertError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-800 font-medium">
-                  ⚠ {alertError}
+                  âš  {alertError}
                 </div>
               )}
 

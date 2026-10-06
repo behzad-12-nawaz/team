@@ -74,7 +74,7 @@ export function Patients() {
               <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
               </svg>
-              + Add New Patient
+              Add New Patient
             </Link>
           </div>
         </div>

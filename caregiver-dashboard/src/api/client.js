@@ -10,6 +10,46 @@ const SEED_PATIENTS = [
   { id: 3, name: "Amina Bibi", phone: "923007654321", today: { taken: 2, total: 2, missed: 0 }, adherence_7d: 100 }
 ];
 
+// Initial seed history archive
+const INITIAL_HISTORY_ARCHIVE = [
+  {
+    id: 1,
+    name: "Ali Khan",
+    phone: "923001234567",
+    status: "Active",
+    linked_at: "2026-09-15T08:00:00Z",
+    unlinked_at: null,
+    medicines: ["Metformin 500 mg (Morning & Evening)", "Amlodipine 5 mg (Morning)"],
+    total_doses_recorded: 42,
+    adherence_overall: 86,
+    doctor_notes: "Hypertension & Type-2 Diabetes management. Regular adherence monitoring.",
+  },
+  {
+    id: 3,
+    name: "Amina Bibi",
+    phone: "923007654321",
+    status: "Active",
+    linked_at: "2026-09-20T10:30:00Z",
+    unlinked_at: null,
+    medicines: ["Lisinopril 10 mg", "Calcium + Vit D3 600 mg", "Glimepiride 2 mg"],
+    total_doses_recorded: 36,
+    adherence_overall: 100,
+    doctor_notes: "Blood pressure & Bone health support. Excellent compliance record.",
+  },
+  {
+    id: 99,
+    name: "Mohammad Rafiq (Sample Archive)",
+    phone: "923009876543",
+    status: "Unlinked / Journey Completed",
+    linked_at: "2026-08-01T09:00:00Z",
+    unlinked_at: "2026-09-30T18:00:00Z",
+    medicines: ["Amoxicillin 500 mg (Course completed)", "Paracetamol 500 mg"],
+    total_doses_recorded: 28,
+    adherence_overall: 96,
+    doctor_notes: "Completed 60-day post-surgery medication journey successfully.",
+  }
+];
+
 // Seed doses strictly for the 2 fixture patients
 const INITIAL_SEED_DOSES = {
   "1": [
@@ -26,7 +66,7 @@ const INITIAL_SEED_DOSES = {
 
 function getMockPatients() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_patients_v4");
+    const saved = localStorage.getItem("dosecare_mock_patients_v5");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
@@ -36,7 +76,25 @@ function getMockPatients() {
 
 function saveMockPatients(patients) {
   try {
-    localStorage.setItem("dosecare_mock_patients_v4", JSON.stringify(patients));
+    localStorage.setItem("dosecare_mock_patients_v5", JSON.stringify(patients));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function getMockHistoryArchive() {
+  try {
+    const saved = localStorage.getItem("dosecare_mock_history_archive_v5");
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error(e);
+  }
+  return INITIAL_HISTORY_ARCHIVE;
+}
+
+function saveMockHistoryArchive(archive) {
+  try {
+    localStorage.setItem("dosecare_mock_history_archive_v5", JSON.stringify(archive));
   } catch (e) {
     console.error(e);
   }
@@ -44,7 +102,7 @@ function saveMockPatients(patients) {
 
 function getAllMockDosesMap() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v4");
+    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v5");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
@@ -54,7 +112,7 @@ function getAllMockDosesMap() {
 
 function saveAllMockDosesMap(map) {
   try {
-    localStorage.setItem("dosecare_mock_all_doses_map_v4", JSON.stringify(map));
+    localStorage.setItem("dosecare_mock_all_doses_map_v5", JSON.stringify(map));
   } catch (e) {
     console.error(e);
   }
@@ -107,6 +165,11 @@ function mockResponse(path, options = {}) {
     return Promise.resolve(getMockPatients());
   }
 
+  if (path === "/caregiver/history" && method === "GET") {
+    return Promise.resolve(getMockHistoryArchive());
+  }
+
+  // Add Patient (Stores in active list and in permanent medical history archive)
   if (path === "/caregiver/patients" && method === "POST") {
     const body = options.body ? JSON.parse(options.body) : {};
     const newId = Math.floor(Math.random() * 9000) + 100;
@@ -123,6 +186,22 @@ function mockResponse(path, options = {}) {
     const updatedList = [...currentList, newPatient];
     saveMockPatients(updatedList);
 
+    // Save to permanent history archive
+    const historyArchive = getMockHistoryArchive();
+    const historyEntry = {
+      id: newId,
+      name: body.name || "New Patient",
+      phone: body.phone || "923001234567",
+      status: "Active",
+      linked_at: new Date().toISOString(),
+      unlinked_at: null,
+      medicines: ["Awaiting Prescription"],
+      total_doses_recorded: 0,
+      adherence_overall: 0,
+      doctor_notes: "Caregiver registered patient into DoseCare platform.",
+    };
+    saveMockHistoryArchive([historyEntry, ...historyArchive]);
+
     const allMap = getAllMockDosesMap();
     allMap[String(newId)] = [];
     saveAllMockDosesMap(allMap);
@@ -130,17 +209,63 @@ function mockResponse(path, options = {}) {
     return Promise.resolve({ id: newId });
   }
 
-  // DELETE /caregiver/patients/{id} (Unlink / Remove patient)
+  // Re-link patient from history
+  const relinkMatch = path.match(/\/caregiver\/history\/(\d+)\/relink/);
+  if (relinkMatch && method === "POST") {
+    const pid = relinkMatch[1];
+    const archive = getMockHistoryArchive();
+    const entry = archive.find(h => String(h.id) === String(pid));
+
+    if (entry) {
+      entry.status = "Active";
+      entry.unlinked_at = null;
+      saveMockHistoryArchive(archive);
+
+      const patients = getMockPatients();
+      if (!patients.some(p => String(p.id) === String(pid))) {
+        patients.push({
+          id: Number(pid),
+          name: entry.name,
+          phone: entry.phone,
+          today: { taken: 0, total: 0, missed: 0 },
+          adherence_7d: entry.adherence_overall || 0,
+        });
+        saveMockPatients(patients);
+      }
+    }
+    return Promise.resolve({ success: true });
+  }
+
+  // DELETE /caregiver/patients/{id} (Unlinks from active, preserves in History Archive)
   const deletePatientMatch = path.match(/\/caregiver\/patients\/(\d+)/);
   if (deletePatientMatch && method === "DELETE") {
     const patientId = deletePatientMatch[1];
     const currentList = getMockPatients();
+    const targetPatient = currentList.find(p => String(p.id) === String(patientId));
     const updatedList = currentList.filter(p => String(p.id) !== String(patientId));
     saveMockPatients(updatedList);
 
-    const allMap = getAllMockDosesMap();
-    delete allMap[String(patientId)];
-    saveAllMockDosesMap(allMap);
+    // Update status in History Archive instead of deleting!
+    const historyArchive = getMockHistoryArchive();
+    const existingIndex = historyArchive.findIndex(h => String(h.id) === String(patientId));
+    if (existingIndex !== -1) {
+      historyArchive[existingIndex].status = "Unlinked / Journey Completed";
+      historyArchive[existingIndex].unlinked_at = new Date().toISOString();
+    } else if (targetPatient) {
+      historyArchive.push({
+        id: targetPatient.id,
+        name: targetPatient.name,
+        phone: targetPatient.phone,
+        status: "Unlinked / Journey Completed",
+        linked_at: new Date().toISOString(),
+        unlinked_at: new Date().toISOString(),
+        medicines: ["Completed Therapy"],
+        total_doses_recorded: targetPatient.today?.taken || 0,
+        adherence_overall: targetPatient.adherence_7d || 0,
+        doctor_notes: "Patient medical journey unlinked from active dashboard.",
+      });
+    }
+    saveMockHistoryArchive(historyArchive);
 
     return Promise.resolve({ success: true, removed_id: Number(patientId) });
   }

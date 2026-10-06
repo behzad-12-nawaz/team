@@ -38,10 +38,15 @@ export function PatientDetail() {
     return () => clearInterval(interval);
   }, [loadData]);
 
+  const totalDoses = doses.length;
   const takenCount = doses.filter((d) => d.status === "CONFIRMED" || d.status === "CONFIRMED_LATE").length;
   const missedCount = doses.filter((d) => d.status === "MISSED").length;
   const skippedCount = doses.filter((d) => d.status === "SKIPPED").length;
-  const adherence = Math.round((100 * takenCount) / Math.max(1, takenCount + missedCount + skippedCount));
+  
+  // If brand new patient with 0 doses, adherence is 0%
+  const adherence = totalDoses > 0 
+    ? Math.round((100 * takenCount) / Math.max(1, takenCount + missedCount + skippedCount))
+    : 0;
 
   const formatPKTTime = (isoString) => {
     try {
@@ -57,8 +62,9 @@ export function PatientDetail() {
     }
   };
 
-  // Generate patient-specific weekly chart
-  const weeklyChartData = [
+  // Weekly chart data (0s for new patients with no history)
+  const isSeedPatient = String(id) === "1" || String(id) === "3";
+  const weeklyChartData = isSeedPatient ? [
     { day: "Mon", taken: String(id) === "3" ? 3 : 2, missed: String(id) === "1" ? 1 : 0, skipped: 0 },
     { day: "Tue", taken: 2, missed: String(id) === "1" ? 1 : 0, skipped: 0 },
     { day: "Wed", taken: 3, missed: 0, skipped: 0 },
@@ -66,21 +72,30 @@ export function PatientDetail() {
     { day: "Fri", taken: 3, missed: 0, skipped: 0 },
     { day: "Sat", taken: String(id) === "3" ? 2 : 1, missed: String(id) === "1" ? 1 : 0, skipped: 0 },
     { day: "Sun", taken: takenCount, missed: missedCount, skipped: skippedCount },
+  ] : [
+    { day: "Mon", taken: 0, missed: 0, skipped: 0 },
+    { day: "Tue", taken: 0, missed: 0, skipped: 0 },
+    { day: "Wed", taken: 0, missed: 0, skipped: 0 },
+    { day: "Thu", taken: 0, missed: 0, skipped: 0 },
+    { day: "Fri", taken: 0, missed: 0, skipped: 0 },
+    { day: "Sat", taken: 0, missed: 0, skipped: 0 },
+    { day: "Sun", taken: takenCount, missed: 0, skipped: 0 },
   ];
 
-  // 30-day adherence calendar tailored per patient
+  // 30-day adherence calendar (New patients have clean gray unassigned days)
   const calendarDays = Array.from({ length: 30 }, (_, i) => {
     const dayNum = 30 - i;
-    let status = "CONFIRMED";
+    let status = "EMPTY";
+
     if (String(id) === "1") {
+      status = "CONFIRMED";
       if (dayNum === 2 || dayNum === 14) status = "MISSED";
       else if (dayNum === 8 || dayNum === 22) status = "SKIPPED";
     } else if (String(id) === "3") {
-      // Amina Bibi has 100% adherence
       status = "CONFIRMED";
     } else {
-      // New patients default clean
-      if (dayNum === 15) status = "SKIPPED";
+      // New patients: Clean empty state
+      status = "EMPTY";
     }
     return { day: dayNum, status };
   }).reverse();
@@ -196,11 +211,13 @@ export function PatientDetail() {
                 </span>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className={`text-4xl font-extrabold ${
-                    adherence >= 80 ? "text-emerald-600" : adherence >= 50 ? "text-amber-600" : "text-rose-600"
+                    totalDoses === 0 ? "text-slate-400" : adherence >= 80 ? "text-emerald-600" : adherence >= 50 ? "text-amber-600" : "text-rose-600"
                   }`}>
-                    {adherence}%
+                    {totalDoses === 0 ? "0%" : `${adherence}%`}
                   </span>
-                  <span className="text-xs font-semibold text-slate-500">Target: 80%+</span>
+                  <span className="text-xs font-semibold text-slate-500">
+                    {totalDoses === 0 ? "New Patient" : "Target: 80%+"}
+                  </span>
                 </div>
               </div>
 
@@ -220,19 +237,23 @@ export function PatientDetail() {
                 </span>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-4xl font-extrabold text-rose-600">{missedCount}</span>
-                  <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Attention needed</span>
+                  <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
+                    {missedCount > 0 ? "Attention needed" : "Zero Missed"}
+                  </span>
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Skipped / Scheduled
+                  Scheduled Doses
                 </span>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-4xl font-extrabold text-[#1E293B]">
                     {doses.length - takenCount - missedCount}
                   </span>
-                  <span className="text-xs font-semibold text-[#1E3A8A] bg-[#EFF6FF] px-2 py-0.5 rounded-full border border-blue-100">Today's plan</span>
+                  <span className="text-xs font-semibold text-[#1E3A8A] bg-[#EFF6FF] px-2 py-0.5 rounded-full border border-blue-100">
+                    {totalDoses === 0 ? "No active plan" : "Today's plan"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -250,7 +271,17 @@ export function PatientDetail() {
               </div>
 
               {doses.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-500">No doses recorded for today.</div>
+                <div className="p-12 text-center max-w-md mx-auto">
+                  <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto mb-3 border border-blue-100">
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-bold text-[#1E293B]">No Doses Scheduled Yet</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    This is a new patient. Doses will appear here automatically once a prescription is active via WhatsApp Bot or Doctor Portal.
+                  </p>
+                </div>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {doses.map((dose) => (
@@ -347,7 +378,9 @@ export function PatientDetail() {
                         ? "bg-emerald-500 text-white"
                         : d.status === "MISSED"
                         ? "bg-rose-500 text-white"
-                        : "bg-slate-200 text-slate-700";
+                        : d.status === "SKIPPED"
+                        ? "bg-slate-300 text-slate-800"
+                        : "bg-slate-100 text-slate-400 border border-slate-200";
 
                     return (
                       <div
@@ -355,7 +388,7 @@ export function PatientDetail() {
                         title={`Day ${d.day}: ${d.status}`}
                         className={`h-11 rounded-xl flex flex-col items-center justify-center font-bold text-xs shadow-xs transition-transform hover:scale-105 cursor-pointer ${bgColor}`}
                       >
-                        <span className="text-[10px] opacity-80">D</span>
+                        <span className="text-[10px] opacity-70">D</span>
                         <span>{d.day}</span>
                       </div>
                     );

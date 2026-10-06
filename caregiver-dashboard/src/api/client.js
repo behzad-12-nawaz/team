@@ -4,8 +4,14 @@ import mock from "../mock/data.json";
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false";
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Initial patient-specific seed doses
-const DEFAULT_PATIENT_DOSES = {
+// Initial seed patients
+const SEED_PATIENTS = [
+  { id: 1, name: "Ali Khan", phone: "923001234567", today: { taken: 1, total: 3, missed: 1 }, adherence_7d: 86 },
+  { id: 3, name: "Amina Bibi", phone: "923007654321", today: { taken: 2, total: 2, missed: 0 }, adherence_7d: 100 }
+];
+
+// Seed doses strictly for the 2 fixture patients
+const INITIAL_SEED_DOSES = {
   "1": [
     { id: 101, patient_id: 1, medicine: "Metformin", dose: "500 mg", scheduled_at: "2026-10-06T03:00:00Z", status: "CONFIRMED", reminder_count: 1 },
     { id: 102, patient_id: 1, medicine: "Amlodipine", dose: "5 mg", scheduled_at: "2026-10-06T04:00:00Z", status: "MISSED", reminder_count: 3 },
@@ -14,50 +20,49 @@ const DEFAULT_PATIENT_DOSES = {
   ],
   "3": [
     { id: 301, patient_id: 3, medicine: "Lisinopril", dose: "10 mg", scheduled_at: "2026-10-06T03:00:00Z", status: "CONFIRMED", reminder_count: 1 },
-    { id: 302, patient_id: 3, medicine: "Calcium + Vit D3", dose: "600 mg", scheduled_at: "2026-10-06T09:00:00Z", status: "CONFIRMED", reminder_count: 1 },
-    { id: 303, patient_id: 3, medicine: "Glimepiride", dose: "2 mg", scheduled_at: "2026-10-06T15:00:00Z", status: "SCHEDULED", reminder_count: 0 }
+    { id: 302, patient_id: 3, medicine: "Calcium + Vit D3", dose: "600 mg", scheduled_at: "2026-10-06T09:00:00Z", status: "CONFIRMED", reminder_count: 1 }
   ]
 };
 
 // Persistent mock store helper using localStorage
 function getMockPatients() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_patients_v2");
+    const saved = localStorage.getItem("dosecare_mock_patients_v3");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
   }
-  return mock.caregiver_patients;
+  return SEED_PATIENTS;
 }
 
 function saveMockPatients(patients) {
   try {
-    localStorage.setItem("dosecare_mock_patients_v2", JSON.stringify(patients));
+    localStorage.setItem("dosecare_mock_patients_v3", JSON.stringify(patients));
   } catch (e) {
     console.error(e);
   }
 }
 
-// Get all doses map keyed by patient_id: { "1": [...], "3": [...] }
+// Get all doses map keyed by patient_id: { "1": [...], "3": [...], "newId": [] }
 function getAllMockDosesMap() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v2");
+    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v3");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
   }
-  return DEFAULT_PATIENT_DOSES;
+  return INITIAL_SEED_DOSES;
 }
 
 function saveAllMockDosesMap(map) {
   try {
-    localStorage.setItem("dosecare_mock_all_doses_map_v2", JSON.stringify(map));
+    localStorage.setItem("dosecare_mock_all_doses_map_v3", JSON.stringify(map));
   } catch (e) {
     console.error(e);
   }
 }
 
-// Get doses for a specific patient
+// Get doses for a specific patient (NEW PATIENTS GET EMPTY ARRAY [])
 function getDosesForPatient(patientId) {
   const map = getAllMockDosesMap();
   const pidStr = String(patientId);
@@ -66,16 +71,10 @@ function getDosesForPatient(patientId) {
     return map[pidStr];
   }
 
-  // Generate initial fresh schedule for new patient
-  const freshDoses = [
-    { id: Math.floor(Math.random() * 9000) + 1000, patient_id: Number(patientId), medicine: "Multivitamin", dose: "1 Tablet", scheduled_at: "2026-10-06T03:00:00Z", status: "CONFIRMED", reminder_count: 1 },
-    { id: Math.floor(Math.random() * 9000) + 2000, patient_id: Number(patientId), medicine: "Panadol Extra", dose: "500 mg", scheduled_at: "2026-10-06T15:00:00Z", status: "NOTIFIED", reminder_count: 1 },
-    { id: Math.floor(Math.random() * 9000) + 3000, patient_id: Number(patientId), medicine: "Omega-3 Fish Oil", dose: "1000 mg", scheduled_at: "2026-10-07T03:00:00Z", status: "SCHEDULED", reminder_count: 0 }
-  ];
-
-  map[pidStr] = freshDoses;
+  // BRAND NEW PATIENTS HAVE NO DOSES (Clean Empty Array)
+  map[pidStr] = [];
   saveAllMockDosesMap(map);
-  return freshDoses;
+  return [];
 }
 
 // Recalculate and update today's taken/total/missed stats for a patient
@@ -84,7 +83,7 @@ function syncPatientStats(patientId) {
   const taken = doses.filter(d => d.status === "CONFIRMED" || d.status === "CONFIRMED_LATE").length;
   const missed = doses.filter(d => d.status === "MISSED").length;
   const total = doses.length;
-  const adherence = Math.round((100 * taken) / Math.max(1, taken + missed));
+  const adherence = total > 0 ? Math.round((100 * taken) / Math.max(1, taken + missed)) : 0;
 
   const patients = getMockPatients();
   const updatedPatients = patients.map((p) => {
@@ -115,21 +114,25 @@ function mockResponse(path, options = {}) {
 
   if (path === "/caregiver/patients" && method === "POST") {
     const body = options.body ? JSON.parse(options.body) : {};
-    const newId = Math.floor(Math.random() * 1000) + 10;
+    const newId = Math.floor(Math.random() * 9000) + 100;
+    
+    // Brand new patient starts with 0 taken, 0 total, 0 missed, 0% adherence
     const newPatient = {
       id: newId,
       name: body.name || "New Patient",
       phone: body.phone || "923001234567",
-      today: { taken: 1, total: 3, missed: 0 },
-      adherence_7d: 100,
+      today: { taken: 0, total: 0, missed: 0 },
+      adherence_7d: 0,
     };
 
     const currentList = getMockPatients();
     const updatedList = [...currentList, newPatient];
     saveMockPatients(updatedList);
 
-    // Initialize doses for this new patient
-    getDosesForPatient(newId);
+    // Explicitly initialize empty doses array for this new patient
+    const allMap = getAllMockDosesMap();
+    allMap[String(newId)] = [];
+    saveAllMockDosesMap(allMap);
 
     return Promise.resolve({ id: newId });
   }
@@ -155,7 +158,6 @@ function mockResponse(path, options = {}) {
     const allMap = getAllMockDosesMap();
     let foundPatientId = null;
 
-    // Search for dose in all patient arrays
     for (const pid in allMap) {
       const idx = allMap[pid].findIndex(d => d.id === doseId);
       if (idx !== -1) {

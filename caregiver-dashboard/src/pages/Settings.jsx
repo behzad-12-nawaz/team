@@ -16,6 +16,9 @@ export function Settings() {
   const [alertSuccess, setAlertSuccess] = useState("");
   const [alertError, setAlertError] = useState("");
 
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const loadLinkedPatients = async () => {
     try {
       const data = await api("/caregiver/patients");
@@ -54,6 +57,22 @@ export function Settings() {
       setPatientError(err.message || "Failed to add patient.");
     } finally {
       setPatientLoading(false);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!patientToDelete) return;
+    try {
+      setDeleteLoading(true);
+      await api(`/caregiver/patients/${patientToDelete.id}`, {
+        method: "DELETE",
+      });
+      setPatientToDelete(null);
+      await loadLinkedPatients();
+    } catch (err) {
+      alert(`Could not remove patient: ${err.message}`);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -121,20 +140,20 @@ export function Settings() {
               {patientSuccess && (
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center space-x-2 font-medium">
-                    <span>âœ“</span>
+                    <span>✓</span>
                     <span>{patientSuccess}</span>
                   </div>
                   <Link
                     to="/patients"
                     className="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors self-start sm:self-auto"
                   >
-                    View in Patients List â†’
+                    View in Patients List →
                   </Link>
                 </div>
               )}
               {patientError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-800 font-medium">
-                  âš  {patientError}
+                  ⚠ {patientError}
                 </div>
               )}
 
@@ -182,7 +201,7 @@ export function Settings() {
               </div>
             </form>
 
-            {/* Currently Linked Patients List */}
+            {/* Currently Linked Patients List with Unlink Action */}
             {linkedPatients.length > 0 && (
               <div className="mt-8 pt-6 border-t border-slate-100">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
@@ -203,12 +222,24 @@ export function Settings() {
                           <div className="text-[11px] text-slate-500 font-mono">+{p.phone}</div>
                         </div>
                       </div>
-                      <Link
-                        to={`/patient/${p.id}`}
-                        className="text-xs font-semibold text-[#2563EB] hover:text-[#1E3A8A]"
-                      >
-                        View &rarr;
-                      </Link>
+                      <div className="flex items-center space-x-2">
+                        <Link
+                          to={`/patient/${p.id}`}
+                          className="text-xs font-semibold text-[#2563EB] hover:text-[#1E3A8A] px-2 py-1 rounded-md hover:bg-blue-50"
+                        >
+                          View &rarr;
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setPatientToDelete(p)}
+                          title={`Unlink ${p.name}`}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -233,12 +264,12 @@ export function Settings() {
             <form onSubmit={handleSaveSettings} className="mt-6 space-y-5">
               {alertSuccess && (
                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 font-medium">
-                  âœ“ {alertSuccess}
+                  ✓ {alertSuccess}
                 </div>
               )}
               {alertError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-800 font-medium">
-                  âš  {alertError}
+                  ⚠ {alertError}
                 </div>
               )}
 
@@ -295,6 +326,42 @@ export function Settings() {
           </div>
         </div>
       </main>
+
+      {/* Confirmation Modal to Unlink/Remove Patient */}
+      {patientToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 p-6 animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-[#1E293B] text-center">Unlink Patient Record?</h3>
+            <p className="text-xs text-slate-500 text-center mt-1.5 leading-relaxed">
+              Are you sure you want to remove <strong className="text-slate-800">{patientToDelete.name}</strong> (+{patientToDelete.phone})? 
+              This will remove their scheduled doses and active medication alerts from your dashboard.
+            </p>
+
+            <div className="mt-6 flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => setPatientToDelete(null)}
+                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeletePatient}
+                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {deleteLoading ? "Removing..." : "Yes, Unlink Patient"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -24,10 +24,9 @@ const INITIAL_SEED_DOSES = {
   ]
 };
 
-// Persistent mock store helper using localStorage
 function getMockPatients() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_patients_v3");
+    const saved = localStorage.getItem("dosecare_mock_patients_v4");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
@@ -37,16 +36,15 @@ function getMockPatients() {
 
 function saveMockPatients(patients) {
   try {
-    localStorage.setItem("dosecare_mock_patients_v3", JSON.stringify(patients));
+    localStorage.setItem("dosecare_mock_patients_v4", JSON.stringify(patients));
   } catch (e) {
     console.error(e);
   }
 }
 
-// Get all doses map keyed by patient_id: { "1": [...], "3": [...], "newId": [] }
 function getAllMockDosesMap() {
   try {
-    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v3");
+    const saved = localStorage.getItem("dosecare_mock_all_doses_map_v4");
     if (saved) return JSON.parse(saved);
   } catch (e) {
     console.error(e);
@@ -56,13 +54,12 @@ function getAllMockDosesMap() {
 
 function saveAllMockDosesMap(map) {
   try {
-    localStorage.setItem("dosecare_mock_all_doses_map_v3", JSON.stringify(map));
+    localStorage.setItem("dosecare_mock_all_doses_map_v4", JSON.stringify(map));
   } catch (e) {
     console.error(e);
   }
 }
 
-// Get doses for a specific patient (NEW PATIENTS GET EMPTY ARRAY [])
 function getDosesForPatient(patientId) {
   const map = getAllMockDosesMap();
   const pidStr = String(patientId);
@@ -71,13 +68,11 @@ function getDosesForPatient(patientId) {
     return map[pidStr];
   }
 
-  // BRAND NEW PATIENTS HAVE NO DOSES (Clean Empty Array)
   map[pidStr] = [];
   saveAllMockDosesMap(map);
   return [];
 }
 
-// Recalculate and update today's taken/total/missed stats for a patient
 function syncPatientStats(patientId) {
   const doses = getDosesForPatient(patientId);
   const taken = doses.filter(d => d.status === "CONFIRMED" || d.status === "CONFIRMED_LATE").length;
@@ -116,7 +111,6 @@ function mockResponse(path, options = {}) {
     const body = options.body ? JSON.parse(options.body) : {};
     const newId = Math.floor(Math.random() * 9000) + 100;
     
-    // Brand new patient starts with 0 taken, 0 total, 0 missed, 0% adherence
     const newPatient = {
       id: newId,
       name: body.name || "New Patient",
@@ -129,12 +123,26 @@ function mockResponse(path, options = {}) {
     const updatedList = [...currentList, newPatient];
     saveMockPatients(updatedList);
 
-    // Explicitly initialize empty doses array for this new patient
     const allMap = getAllMockDosesMap();
     allMap[String(newId)] = [];
     saveAllMockDosesMap(allMap);
 
     return Promise.resolve({ id: newId });
+  }
+
+  // DELETE /caregiver/patients/{id} (Unlink / Remove patient)
+  const deletePatientMatch = path.match(/\/caregiver\/patients\/(\d+)/);
+  if (deletePatientMatch && method === "DELETE") {
+    const patientId = deletePatientMatch[1];
+    const currentList = getMockPatients();
+    const updatedList = currentList.filter(p => String(p.id) !== String(patientId));
+    saveMockPatients(updatedList);
+
+    const allMap = getAllMockDosesMap();
+    delete allMap[String(patientId)];
+    saveAllMockDosesMap(allMap);
+
+    return Promise.resolve({ success: true, removed_id: Number(patientId) });
   }
 
   // Match /patients/{id}/doses

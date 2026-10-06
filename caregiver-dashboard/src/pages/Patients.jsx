@@ -9,6 +9,11 @@ export function Patients() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  
+  // Patient removal state
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState("");
 
   const loadPatients = useCallback(async () => {
     try {
@@ -25,12 +30,28 @@ export function Patients() {
 
   useEffect(() => {
     loadPatients();
-    // 30-second auto refresh as required by Step 5
     const id = setInterval(loadPatients, 30000);
     return () => clearInterval(id);
   }, [loadPatients]);
 
-  // Filter patients by name or phone number based on Navbar search
+  const handleDeletePatient = async () => {
+    if (!patientToDelete) return;
+    try {
+      setDeleteLoading(true);
+      await api(`/caregiver/patients/${patientToDelete.id}`, {
+        method: "DELETE",
+      });
+      setDeleteSuccess(`Patient "${patientToDelete.name}" was unlinked successfully.`);
+      setTimeout(() => setDeleteSuccess(""), 4000);
+      setPatientToDelete(null);
+      await loadPatients();
+    } catch (err) {
+      alert(`Could not remove patient: ${err.message}`);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const filteredPatients = patients.filter((patient) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase().trim();
@@ -79,6 +100,17 @@ export function Patients() {
           </div>
         </div>
 
+        {/* Global Delete Notification Banner */}
+        {deleteSuccess && (
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm text-amber-900 font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span>{deleteSuccess}</span>
+            </div>
+            <button onClick={() => setDeleteSuccess("")} className="text-amber-700 hover:text-amber-900 text-xs">✕</button>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="py-20 text-center">
@@ -115,13 +147,13 @@ export function Patients() {
             </div>
             <h3 className="text-lg font-bold text-[#1E293B]">No linked patients yet</h3>
             <p className="text-sm text-slate-500 mt-1">
-              Add a patient in Settings using their name and mobile number.
+              Add a patient using their name and mobile number.
             </p>
             <Link
               to="/settings"
               className="mt-4 inline-flex items-center px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-xs"
             >
-              Go to Settings
+              Add Patient Now
             </Link>
           </div>
         )}
@@ -178,17 +210,31 @@ export function Patients() {
                         </div>
                       </div>
 
-                      {missed > 0 ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5" />
-                          {missed} Missed
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-                          On Track
-                        </span>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {missed > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5" />
+                            {missed} Missed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+                            On Track
+                          </span>
+                        )}
+
+                        {/* Remove / Unlink Patient Icon Button */}
+                        <button
+                          type="button"
+                          onClick={() => setPatientToDelete(patient)}
+                          title={`Unlink ${patient.name}`}
+                          className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mt-6 space-y-4">
@@ -210,9 +256,9 @@ export function Patients() {
                       <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                         <span className="text-xs font-medium text-slate-500">7-Day Adherence</span>
                         <span className={`text-sm font-bold ${
-                          adherence >= 80 ? "text-emerald-600" : adherence >= 50 ? "text-amber-600" : "text-rose-600"
+                          total === 0 ? "text-slate-400" : adherence >= 80 ? "text-emerald-600" : adherence >= 50 ? "text-amber-600" : "text-rose-600"
                         }`}>
-                          {adherence}%
+                          {total === 0 ? "0%" : `${adherence}%`}
                         </span>
                       </div>
                     </div>
@@ -236,6 +282,42 @@ export function Patients() {
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal to Unlink/Remove Patient */}
+      {patientToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 p-6 animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-[#1E293B] text-center">Unlink Patient Record?</h3>
+            <p className="text-xs text-slate-500 text-center mt-1.5 leading-relaxed">
+              Are you sure you want to remove <strong className="text-slate-800">{patientToDelete.name}</strong> (+{patientToDelete.phone})? 
+              This will remove their scheduled doses and active medication alerts from your dashboard.
+            </p>
+
+            <div className="mt-6 flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => setPatientToDelete(null)}
+                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeletePatient}
+                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {deleteLoading ? "Removing..." : "Yes, Unlink Patient"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

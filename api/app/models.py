@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from app.utils import utcnow
+from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import UniqueConstraint, Index, Enum as SQLEnum, Text
+from sqlalchemy import UniqueConstraint, Index, Enum as SQLEnum, Text, DateTime
 from enum import Enum
 
 
@@ -60,8 +61,8 @@ class DoctorLink(SQLModel, table=True):
     patient_id: int = Field(foreign_key="users.id", index=True)
     doctor_id: int = Field(foreign_key="users.id", index=True)
     status: LinkStatus = Field(default=LinkStatus.pending)
-    consent_at: datetime | None = Field(default=None)
-    revoked_at: datetime | None = Field(default=None)
+    consent_at: datetime | None = Field(default=None, sa_type=DateTime())
+    revoked_at: datetime | None = Field(default=None, sa_type=DateTime())
 
 
 class Prescription(SQLModel, table=True):
@@ -73,7 +74,7 @@ class Prescription(SQLModel, table=True):
     status: PrescriptionStatus = Field(default=PrescriptionStatus.draft)
     version: int = Field(default=1)
     supersedes_id: int | None = Field(foreign_key="prescriptions.id", default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: utcnow(), sa_type=DateTime())
 
 
 class Medicine(SQLModel, table=True):
@@ -94,12 +95,12 @@ class Dose(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     medicine_id: int = Field(foreign_key="medicines.id", index=True)
     patient_id: int = Field(foreign_key="users.id", index=True)
-    scheduled_at: datetime = Field(index=True)
+    scheduled_at: datetime = Field(index=True, sa_type=DateTime())
     status: DoseStatus = Field(default=DoseStatus.SCHEDULED, index=True)
     reminder_count: int = Field(default=0)
-    last_reminded_at: datetime | None = Field(default=None)
+    last_reminded_at: datetime | None = Field(default=None, sa_type=DateTime())
     snoozed: bool = Field(default=False)
-    replied_at: datetime | None = Field(default=None)
+    replied_at: datetime | None = Field(default=None, sa_type=DateTime())
 
 
 class AuditLog(SQLModel, table=True):
@@ -109,7 +110,7 @@ class AuditLog(SQLModel, table=True):
     actor_id: int = Field(foreign_key="users.id")
     patient_id: int = Field(foreign_key="users.id")
     action: str
-    at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    at: datetime = Field(default_factory=lambda: utcnow(), sa_type=DateTime())
 
 
 class Setting(SQLModel, table=True):

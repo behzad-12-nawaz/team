@@ -12,9 +12,9 @@ from app.models import (
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 USERS = [
-    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@example.com", "role": UserRole.patient, "password": "patient123"},
-    {"id": 2, "name": "Saba Khan", "phone": "923009999999", "email": "saba@example.com", "role": UserRole.caregiver, "password": "caregiver123"},
-    {"id": 3, "name": "Dr. Ahmed", "phone": "923008888888", "email": "dr.ahmed@example.com", "role": UserRole.doctor, "password": "doctor123"},
+    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@example.com", "role": UserRole.patient, "password": "patient123", "invite_code": "ALI-4821"},
+    {"id": 2, "name": "Saba Khan", "phone": "923009999999", "email": "saba@example.com", "role": UserRole.caregiver, "password": "caregiver123", "invite_code": None},
+    {"id": 3, "name": "Dr. Ahmed", "phone": "923008888888", "email": "dr.ahmed@example.com", "role": UserRole.doctor, "password": "doctor123", "invite_code": None},
 ]
 
 CAREGIVER_LINKS = [(1, 2)]
@@ -54,7 +54,7 @@ def main():
                 session,
                 User,
                 phone=u["phone"],
-                defaults={"id": u["id"], "name": u["name"], "email": u["email"], "role": u["role"], "password_hash": pwd_context.hash(u["password"])},
+                defaults={"id": u["id"], "name": u["name"], "email": u["email"], "role": u["role"], "password_hash": pwd_context.hash(u["password"]), "invite_code": u.get("invite_code")},
             )
         for pid, cid in CAREGIVER_LINKS:
             get_or_create(session, CaregiverLink, patient_id=pid, caregiver_id=cid)

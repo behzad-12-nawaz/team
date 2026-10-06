@@ -44,6 +44,7 @@ class User(SQLModel, table=True):
     email: str | None = Field(default=None, index=True, unique=True)
     role: UserRole
     password_hash: str
+    invite_code: str | None = Field(default=None, index=True, unique=True)
 
 
 class CaregiverLink(SQLModel, table=True):

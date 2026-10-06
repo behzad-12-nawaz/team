@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlmodel import Session, select, delete
 
-from app.auth import get_current_user, patient_access, verify_patient_access
+from app.auth import get_current_user, get_current_or_service_user, patient_access, verify_patient_access
 from app.config import settings
 from app.db import engine
 from app.models import (
     User, Prescription, Medicine, Dose,
     PrescriptionStatus, DoseStatus,
 )
+from app.notifier import notifier
 from app.utils import utcnow
 
 router = APIRouter(prefix="", tags=["prescriptions"])
@@ -95,13 +96,28 @@ def create_prescription(
             session.add(medicine)
         session.commit()
 
+        if body.prescribed_by is not None:
+            patient = session.get(User, body.patient_id)
+            if patient and patient.phone:
+                prescriber = session.get(User, body.prescribed_by)
+                prescriber_name = prescriber.name if prescriber else "a doctor"
+                notifier.send(
+                    phone=patient.phone,
+                    text=f"New prescription from {prescriber_name}",
+                    buttons=[
+                        {"id": f"confirm:{prescription.id}", "title": "Confirm"},
+                        {"id": f"reject:{prescription.id}", "title": "Reject"},
+                    ],
+                    template="prescription_request",
+                )
+
         return {"id": prescription.id, "status": prescription.status, "version": prescription.version}
 
 
 @router.post("/prescriptions/{prescription_id}/confirm")
 def confirm_prescription(
     prescription_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Any = Depends(get_current_or_service_user),
 ):
     with Session(engine) as session:
         prescription = session.get(Prescription, prescription_id)
@@ -160,7 +176,7 @@ def confirm_prescription(
 @router.post("/prescriptions/{prescription_id}/reject")
 def reject_prescription(
     prescription_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Any = Depends(get_current_or_service_user),
 ):
     with Session(engine) as session:
         prescription = session.get(Prescription, prescription_id)

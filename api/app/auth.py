@@ -61,14 +61,10 @@ def require_role(*allowed_roles: str) -> Callable[[User], User]:
     return dependency
 
 
-def patient_access(
-    patient_id: int,
-    current_user: User = Depends(get_current_user),
-) -> User:
+def verify_patient_access(patient_id: int, current_user: User):
     if current_user.role == "patient":
         if current_user.id != patient_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-        return current_user
     elif current_user.role == "caregiver":
         with Session(engine) as session:
             link = session.exec(
@@ -79,7 +75,6 @@ def patient_access(
             ).first()
             if link is None:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-        return current_user
     elif current_user.role == "doctor":
         with Session(engine) as session:
             link = session.exec(
@@ -93,5 +88,13 @@ def patient_access(
                 session.add(AuditLog(actor_id=current_user.id, patient_id=patient_id, action="access_denied_no_active_link"))
                 session.commit()
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to this patient has ended")
-        return current_user
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+
+def patient_access(
+    patient_id: int,
+    current_user: User = Depends(get_current_user),
+) -> User:
+    verify_patient_access(patient_id, current_user)
+    return current_user

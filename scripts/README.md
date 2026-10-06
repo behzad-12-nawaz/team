@@ -14,15 +14,28 @@ no credit card required.
 | `hello-portal/` | Portal hello | `dosecare-hello-portal` |
 
 Each folder is a standalone Vercel project with a `package.json`
-and an `api/index.js` serverless function (for backend/bot)
-or a plain `index.html` (for frontends).
+and an `api/index.py` FastAPI (ASGI) serverless function (for
+backend/bot) or a plain `index.html` (for frontends).
+
+## How FastAPI runs on Vercel
+
+Vercel's Python runtime treats every `api/*.py` file as a serverless
+function. When the file exports an ASGI app (`app = FastAPI()`), Vercel
+serves it at the project root and routes all paths through it — no
+Dockerfile and no `uvicorn` command needed on Vercel. `requirements.txt`
+is installed automatically at build time.
+
+- Local dev: `pip install -r requirements.txt`, then
+  `uvicorn api.index:app` (or `npm run dev` → `vercel dev`).
+- `uvicorn` stays in `requirements.txt` for local runs only; on Vercel
+  the platform hosts the ASGI app itself.
 
 ## Deploy — backend hello (hello-api)
 
 1. Go to https://vercel.com → **"Add New..."** → **"Project"**
 2. Click **"Import"** next to your GitHub repo (`behzad-12-nawaz/team`)
 3. **Root Directory:** click "Edit" → set to `scripts/hello-api`
-4. **Framework Preset:** Other (Vercel auto-detects Node.js)
+4. **Framework Preset:** Other (Vercel auto-detects Python / FastAPI)
 5. **Environment Variables** (click "Environment Variables"):
    - `DATABASE_URL` → leave empty for hello (or paste your real Neon/Supabase URL)
    - `JWT_SECRET` → any random string, e.g. `hello-secret-change-on-merge`
@@ -68,7 +81,7 @@ Same as backend hello, but:
 
 ## Redeploy-on-merge proof
 
-1. Edit `scripts/hello-api/api/index.js`, change the hello text:
+1. Edit `scripts/hello-api/api/index.py`, change the hello text:
    `{ hello: "dosecare-api — redeploy test" }`
 2. Commit and push to `main`:
    ```bash

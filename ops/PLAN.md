@@ -60,7 +60,7 @@ Share real secrets in a private team chat only.
 ### Step 3: Deploy pipeline test
 | Part | Where |
 |---|---|
-| Backend and bot | Render or Railway, from GitHub, with env variables |
+| Backend and bot | Vercel (FastAPI serverless functions), from GitHub, with env variables |
 | Database | Neon or Supabase |
 | Frontends | Vercel with `VITE_API_URL` |
 Check each provider's free-tier limits on Day 1. Some free servers sleep when idle, so open the app before the demo to wake it.

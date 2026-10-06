@@ -12,6 +12,7 @@ export function PatientDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [replyLoading, setReplyLoading] = useState(null);
+  const [actionSuccessMessage, setActionSuccessMessage] = useState("");
 
   const loadData = useCallback(async () => {
     try {
@@ -74,13 +75,26 @@ export function PatientDetail() {
     return { day: dayNum, status };
   }).reverse();
 
-  const handleActionReply = async (doseId, action) => {
+  // Dose reply action: taken, skip, snooze
+  const handleActionReply = async (doseId, action, medicineName) => {
     try {
       setReplyLoading(doseId);
-      await api(`/doses/${doseId}/reply`, {
+      setActionSuccessMessage("");
+      const res = await api(`/doses/${doseId}/reply`, {
         method: "POST",
         body: JSON.stringify({ action }),
       });
+
+      const actionText =
+        action === "taken"
+          ? "CONFIRMED (Taken)"
+          : action === "skip"
+          ? "SKIPPED"
+          : "SNOOZED (15 min)";
+
+      setActionSuccessMessage(`✓ Dose of ${medicineName} successfully marked as ${actionText}!`);
+      setTimeout(() => setActionSuccessMessage(""), 5000);
+
       await loadData();
     } catch (err) {
       alert(`Action failed: ${err.message}`);
@@ -133,6 +147,19 @@ export function PatientDetail() {
             </div>
           </div>
         </div>
+
+        {/* Global Action Success Banner */}
+        {actionSuccessMessage && (
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{actionSuccessMessage}</span>
+            </div>
+            <button onClick={() => setActionSuccessMessage("")} className="text-emerald-600 hover:text-emerald-800 text-xs">
+              ✕
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="py-20 text-center">
@@ -242,24 +269,35 @@ export function PatientDetail() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-3">
+                      {/* Action Buttons & Status Badge */}
+                      <div className="flex items-center space-x-2.5">
                         <StatusBadge status={dose.status} />
 
                         {dose.status === "NOTIFIED" && (
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1.5 ml-2">
                             <button
                               disabled={replyLoading === dose.id}
-                              onClick={() => handleActionReply(dose.id, "taken")}
-                              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs transition-all disabled:opacity-50"
+                              onClick={() => handleActionReply(dose.id, "taken", dose.medicine)}
+                              title="Confirm that the patient has taken this dose"
+                              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all disabled:opacity-50 cursor-pointer flex items-center space-x-1"
                             >
-                              Mark Taken
+                              <span>✓ Mark Taken</span>
                             </button>
                             <button
                               disabled={replyLoading === dose.id}
-                              onClick={() => handleActionReply(dose.id, "skip")}
-                              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition-all disabled:opacity-50"
+                              onClick={() => handleActionReply(dose.id, "skip", dose.medicine)}
+                              title="Mark this dose as skipped"
+                              className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-50 cursor-pointer border border-slate-200"
                             >
                               Skip
+                            </button>
+                            <button
+                              disabled={replyLoading === dose.id}
+                              onClick={() => handleActionReply(dose.id, "snooze", dose.medicine)}
+                              title="Snooze reminder for 15 minutes"
+                              className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all disabled:opacity-50 cursor-pointer border border-amber-200"
+                            >
+                              ⏰ 15m
                             </button>
                           </div>
                         )}

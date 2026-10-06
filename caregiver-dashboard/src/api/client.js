@@ -23,6 +23,24 @@ function saveMockPatients(patients) {
   }
 }
 
+function getMockDoses() {
+  try {
+    const saved = localStorage.getItem("dosecare_mock_doses");
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error(e);
+  }
+  return mock.doses;
+}
+
+function saveMockDoses(doses) {
+  try {
+    localStorage.setItem("dosecare_mock_doses", JSON.stringify(doses));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 // MOCK: replace on merge day
 function mockResponse(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
@@ -54,11 +72,50 @@ function mockResponse(path, options = {}) {
   }
 
   if (path.match(/\/patients\/\d+\/doses/) && method === "GET") {
-    return Promise.resolve(mock.doses);
+    return Promise.resolve(getMockDoses());
   }
 
-  if (path.match(/\/doses\/\d+\/reply/) && method === "POST") {
-    return Promise.resolve(mock.dose_reply);
+  // Contract: POST /doses/{id}/reply with {"action": "taken" | "skip" | "snooze"}
+  if (path.match(/\/doses\/(\d+)\/reply/) && method === "POST") {
+    const match = path.match(/\/doses\/(\d+)\/reply/);
+    const doseId = match ? parseInt(match[1], 10) : null;
+    const body = options.body ? JSON.parse(options.body) : {};
+    const action = body.action || "taken";
+
+    let newStatus = "CONFIRMED";
+    if (action === "skip") newStatus = "SKIPPED";
+    else if (action === "snooze") newStatus = "NOTIFIED";
+
+    const currentDoses = getMockDoses();
+    const updatedDoses = currentDoses.map((d) => {
+      if (d.id === doseId) {
+        return {
+          ...d,
+          status: newStatus,
+          reminder_count: action === "snooze" ? (d.reminder_count || 0) + 1 : d.reminder_count,
+        };
+      }
+      return d;
+    });
+    saveMockDoses(updatedDoses);
+
+    // Update patient today counts in mock
+    const patients = getMockPatients();
+    const updatedPatients = patients.map((p) => {
+      if (action === "taken") {
+        return {
+          ...p,
+          today: {
+            ...p.today,
+            taken: (p.today?.taken || 0) + 1,
+          },
+        };
+      }
+      return p;
+    });
+    saveMockPatients(updatedPatients);
+
+    return Promise.resolve({ id: doseId, status: newStatus });
   }
 
   if (path === "/caregiver/settings" && method === "PUT") {

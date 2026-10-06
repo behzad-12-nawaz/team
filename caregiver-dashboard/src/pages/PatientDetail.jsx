@@ -14,6 +14,10 @@ export function PatientDetail() {
   const [replyLoading, setReplyLoading] = useState(null);
   const [actionSuccessMessage, setActionSuccessMessage] = useState("");
 
+  // Month & Year state for Real Adherence Calendar (Default: October 2026)
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date(2026, 9, 1));
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(6); // Default selected: Today (Oct 6)
+
   const loadData = useCallback(async () => {
     try {
       setError("");
@@ -43,7 +47,6 @@ export function PatientDetail() {
   const missedCount = doses.filter((d) => d.status === "MISSED").length;
   const skippedCount = doses.filter((d) => d.status === "SKIPPED").length;
   
-  // If brand new patient with 0 doses, adherence is 0%
   const adherence = totalDoses > 0 
     ? Math.round((100 * takenCount) / Math.max(1, takenCount + missedCount + skippedCount))
     : 0;
@@ -62,7 +65,7 @@ export function PatientDetail() {
     }
   };
 
-  // Weekly chart data (0s for new patients with no history)
+  // Weekly performance chart
   const isSeedPatient = String(id) === "1" || String(id) === "3";
   const weeklyChartData = isSeedPatient ? [
     { day: "Mon", taken: String(id) === "3" ? 3 : 2, missed: String(id) === "1" ? 1 : 0, skipped: 0 },
@@ -82,23 +85,63 @@ export function PatientDetail() {
     { day: "Sun", taken: takenCount, missed: 0, skipped: 0 },
   ];
 
-  // 30-day adherence calendar (New patients have clean gray unassigned days)
-  const calendarDays = Array.from({ length: 30 }, (_, i) => {
-    const dayNum = 30 - i;
-    let status = "EMPTY";
+  // Calendar Calculation Helpers
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+  const monthName = currentCalendarDate.toLocaleString("en-US", { month: "long" });
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sun, 1 = Mon ...
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    if (String(id) === "1") {
-      status = "CONFIRMED";
-      if (dayNum === 2 || dayNum === 14) status = "MISSED";
-      else if (dayNum === 8 || dayNum === 22) status = "SKIPPED";
-    } else if (String(id) === "3") {
-      status = "CONFIRMED";
-    } else {
-      // New patients: Clean empty state
-      status = "EMPTY";
+  // Reference "Today" is October 6, 2026 (matching dataset)
+  const isCurrentActiveMonth = year === 2026 && month === 9; // October 2026
+  const todayDayNumber = isCurrentActiveMonth ? 6 : -1;
+
+  const handlePrevMonth = () => {
+    setCurrentCalendarDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentCalendarDate(new Date(year, month + 1, 1));
+  };
+
+  // Determine realistic status for each calendar day
+  const getDayDetails = (dayNum) => {
+    if (!isCurrentActiveMonth) {
+      return { status: "UPCOMING", label: "No scheduled records for this month", color: "bg-slate-50 text-slate-400 border border-slate-200" };
     }
-    return { day: dayNum, status };
-  }).reverse();
+
+    if (totalDoses === 0) {
+      return { status: "UNASSIGNED", label: "New Patient - No doses logged yet", color: "bg-slate-50 text-slate-400 border border-slate-200" };
+    }
+
+    // Future days (after Oct 6) are NOT taken yet!
+    if (dayNum > todayDayNumber) {
+      return { status: "UPCOMING", label: "Upcoming scheduled day (Awaiting date)", color: "bg-white text-slate-400 border border-slate-200 hover:border-blue-400" };
+    }
+
+    // Today (Oct 6)
+    if (dayNum === todayDayNumber) {
+      if (missedCount > 0) return { status: "MISSED", label: "Today: Doses missed", color: "bg-rose-500 text-white font-bold ring-4 ring-rose-200" };
+      if (takenCount > 0) return { status: "CONFIRMED", label: "Today: Doses confirmed taken", color: "bg-emerald-500 text-white font-bold ring-4 ring-blue-300" };
+      return { status: "SCHEDULED", label: "Today: Doses pending", color: "bg-blue-500 text-white font-bold ring-4 ring-blue-300" };
+    }
+
+    // Past days before Oct 6
+    if (String(id) === "1") {
+      // Ali Khan past days
+      if (dayNum === 2) return { status: "MISSED", label: "Oct 2: 1 Missed dose (Amlodipine)", color: "bg-rose-500 text-white font-bold" };
+      if (dayNum === 4) return { status: "SKIPPED", label: "Oct 4: 1 Skipped dose", color: "bg-slate-300 text-slate-800 font-bold" };
+      return { status: "CONFIRMED", label: `Oct ${dayNum}: All doses taken on time`, color: "bg-emerald-500 text-white font-bold" };
+    }
+
+    if (String(id) === "3") {
+      // Amina Bibi past days (100% adherence)
+      return { status: "CONFIRMED", label: `Oct ${dayNum}: 100% adherence (All doses confirmed)`, color: "bg-emerald-500 text-white font-bold" };
+    }
+
+    return { status: "UPCOMING", label: `Oct ${dayNum}: No logs`, color: "bg-slate-50 text-slate-400 border border-slate-200" };
+  };
 
   // Dose reply action: taken, skip, snooze
   const handleActionReply = async (doseId, action, medicineName) => {
@@ -127,6 +170,8 @@ export function PatientDetail() {
       setReplyLoading(null);
     }
   };
+
+  const selectedDayInfo = getDayDetails(selectedCalendarDay);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] flex flex-col">
@@ -349,50 +394,110 @@ export function PatientDetail() {
               )}
             </div>
 
-            {/* 30-Day Adherence Calendar & Weekly Bar Chart */}
+            {/* REAL Full-Featured Monthly Calendar & Weekly Bar Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* 30-Day Calendar */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-base font-bold text-[#1E293B]">30-Day Adherence Calendar</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Daily medication compliance log</p>
+              {/* REAL Monthly Calendar */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div>
+                  {/* Month & Year Navigation Header */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h2 className="text-base font-bold text-[#1E293B] flex items-center space-x-2">
+                        <span>📅 {monthName} {year}</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">Real Monthly Adherence Calendar</p>
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={handlePrevMonth}
+                        title="Previous Month"
+                        className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={handleNextMonth}
+                        title="Next Month"
+                        className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 text-[11px] font-semibold">
-                    <span className="inline-flex items-center text-emerald-700">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span> Taken
-                    </span>
-                    <span className="inline-flex items-center text-rose-700">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1"></span> Missed
-                    </span>
-                    <span className="inline-flex items-center text-slate-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 mr-1"></span> Skipped
-                    </span>
+
+                  {/* Weekday Names Header (Sun, Mon, Tue...) */}
+                  <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                    {weekdays.map((wd) => (
+                      <div key={wd} className="text-[11px] font-bold uppercase tracking-wider text-slate-400 py-1">
+                        {wd}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Monthly Dates Grid (Proper day-of-week alignment) */}
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {/* Empty placeholder cells before 1st of month */}
+                    {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                      <div key={`empty-${idx}`} className="h-10 rounded-xl bg-slate-50/40"></div>
+                    ))}
+
+                    {/* Actual Days of the Month */}
+                    {Array.from({ length: daysInMonth }, (_, i) => {
+                      const dayNum = i + 1;
+                      const dayInfo = getDayDetails(dayNum);
+                      const isToday = isCurrentActiveMonth && dayNum === todayDayNumber;
+                      const isSelected = dayNum === selectedCalendarDay;
+
+                      return (
+                        <button
+                          key={dayNum}
+                          type="button"
+                          onClick={() => setSelectedCalendarDay(dayNum)}
+                          title={`Day ${dayNum}: ${dayInfo.label}`}
+                          className={`h-10 rounded-xl flex flex-col items-center justify-center text-xs transition-all cursor-pointer relative ${dayInfo.color} ${
+                            isSelected ? "scale-105 shadow-md" : "hover:scale-102"
+                          }`}
+                        >
+                          <span className="text-[11px] font-bold">{dayNum}</span>
+                          {isToday && (
+                            <span className="w-1 h-1 rounded-full bg-blue-600 absolute bottom-1"></span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-6 sm:grid-cols-10 gap-2 mt-4">
-                  {calendarDays.map((d) => {
-                    const bgColor =
-                      d.status === "CONFIRMED"
-                        ? "bg-emerald-500 text-white"
-                        : d.status === "MISSED"
-                        ? "bg-rose-500 text-white"
-                        : d.status === "SKIPPED"
-                        ? "bg-slate-300 text-slate-800"
-                        : "bg-slate-100 text-slate-400 border border-slate-200";
+                {/* Selected Day Info & Legend */}
+                <div className="mt-5 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs mb-3">
+                    <span className="font-semibold text-slate-700">
+                      Selected: <strong>{monthName} {selectedCalendarDay}, {year}</strong>
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {selectedDayInfo.label}
+                    </span>
+                  </div>
 
-                    return (
-                      <div
-                        key={d.day}
-                        title={`Day ${d.day}: ${d.status}`}
-                        className={`h-11 rounded-xl flex flex-col items-center justify-center font-bold text-xs shadow-xs transition-transform hover:scale-105 cursor-pointer ${bgColor}`}
-                      >
-                        <span className="text-[10px] opacity-70">D</span>
-                        <span>{d.day}</span>
-                      </div>
-                    );
-                  })}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] font-medium pt-1 border-t border-slate-100 text-slate-600">
+                    <span className="inline-flex items-center">
+                      <span className="w-2.5 h-2.5 rounded-md bg-emerald-500 mr-1.5"></span> Taken
+                    </span>
+                    <span className="inline-flex items-center">
+                      <span className="w-2.5 h-2.5 rounded-md bg-rose-500 mr-1.5"></span> Missed
+                    </span>
+                    <span className="inline-flex items-center">
+                      <span className="w-2.5 h-2.5 rounded-md bg-slate-300 mr-1.5"></span> Skipped
+                    </span>
+                    <span className="inline-flex items-center">
+                      <span className="w-2.5 h-2.5 rounded-md bg-white border border-slate-300 mr-1.5"></span> Upcoming
+                    </span>
+                  </div>
                 </div>
               </div>
 

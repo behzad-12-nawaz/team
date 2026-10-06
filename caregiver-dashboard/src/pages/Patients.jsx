@@ -5,6 +5,7 @@ import { Navbar } from "../components/Navbar";
 
 export function Patients() {
   const [patients, setPatients] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
@@ -29,9 +30,18 @@ export function Patients() {
     return () => clearInterval(id);
   }, [loadPatients]);
 
+  // Filter patients by name or phone number based on Navbar search
+  const filteredPatients = patients.filter((patient) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const nameMatch = (patient.name || "").toLowerCase().includes(query);
+    const phoneMatch = (patient.phone || "").includes(query);
+    return nameMatch || phoneMatch;
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+      <Navbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-200">
@@ -116,10 +126,31 @@ export function Patients() {
           </div>
         )}
 
+        {/* Search Not Found State */}
+        {!loading && !error && patients.length > 0 && filteredPatients.length === 0 && (
+          <div className="py-16 text-center max-w-md mx-auto bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-slate-900">No patients found</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              No matching results for "<strong className="text-slate-700">{searchQuery}</strong>"
+            </p>
+            <button
+              onClick={() => setSearchQuery("")}
+              className="mt-4 px-3.5 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors cursor-pointer"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
+
         {/* Patients Grid */}
-        {!loading && !error && patients.length > 0 && (
+        {!loading && !error && filteredPatients.length > 0 && (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {patients.map((patient) => {
+            {filteredPatients.map((patient) => {
               const taken = patient.today?.taken ?? 0;
               const total = patient.today?.total ?? 0;
               const missed = patient.today?.missed ?? 0;

@@ -1,29 +1,29 @@
 # Root governance files - Task 6 only
-/README.md      @task6-handle
-/.gitignore     @task6-handle
-/.env.example   @task6-handle
-/CODEOWNERS     @task6-handle
+/README.md      @behzad-12-nawaz
+/.gitignore     @behzad-12-nawaz
+/.env.example   @behzad-12-nawaz
+/CODEOWNERS     @behzad-12-nawaz
 
 # Contract - everyone (frozen after Day 1)
-/contract/      @task1-handle @task2-handle @task3-handle @task4-handle @task5-handle @task6-handle
+/contract/      @muhammadabdullah181 @abdulrehman516820-del @Ali-Hamza01 @kamran33678 @AliAzeem92 @behzad-12-nawaz
 
 # Task 1 - Backend and reminder engine
-/api/           @task1-handle
+/api/           @muhammadabdullah181
 
 # Task 2 - WhatsApp bot
-/bot/           @task2-handle
+/bot/           @abdulrehman516820-del
 
 # Task 3 - AI package
-/ai/            @task3-handle
+/ai/            @Ali-Hamza01
 
 # Task 4 - Caregiver dashboard
-/caregiver-dashboard/  @task4-handle
+/caregiver-dashboard/  @kamran33678
 
 # Task 5 - Clinic portal
-/clinic-portal/ @task5-handle
+/clinic-portal/ @AliAzeem92
 
 # Task 6 - DevOps, QA, demo, pitch
-/ops/           @task6-handle
-/docs/          @task6-handle
-/scripts/       @task6-handle
-/.github/       @task6-handle
+/ops/           @behzad-12-nawaz
+/docs/          @behzad-12-nawaz
+/scripts/       @behzad-12-nawaz
+/.github/       @behzad-12-nawaz

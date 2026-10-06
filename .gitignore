@@ -12,6 +12,9 @@ node_modules/
 # Backend reminder outbox (written by NOTIFIER=console)
 outbox.log
 
+# Kilo runtime config
+.kilo/
+
 # OS / editor noise
 .DS_Store
 *.swp

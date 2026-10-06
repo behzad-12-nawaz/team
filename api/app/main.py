@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 
-from app.routers import auth, prescriptions
+from app.routers import auth, prescriptions, doses
 
 app = FastAPI(title="DoseCare API", version="0.1.0")
 app.include_router(auth.router)
 app.include_router(prescriptions.router)
+app.include_router(doses.router)
 
 
 @app.get("/")

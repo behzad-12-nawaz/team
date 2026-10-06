@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "changeme"
     NOTIFIER: str = "console"
     BOT_URL: str = "http://localhost:8001"
+    BOT_SERVICE_TOKEN: str = ""
 
     model_config = {"env_file": ".env"}
 

@@ -61,7 +61,9 @@ def require_role(*allowed_roles: str) -> Callable[[User], User]:
     return dependency
 
 
-def verify_patient_access(patient_id: int, current_user: User):
+def verify_patient_access(patient_id: int, current_user: User | str):
+    if current_user == "service":
+        return
     if current_user.role == "patient":
         if current_user.id != patient_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
@@ -98,3 +100,32 @@ def patient_access(
 ) -> User:
     verify_patient_access(patient_id, current_user)
     return current_user
+
+
+def get_service_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    if credentials.credentials == settings.BOT_SERVICE_TOKEN:
+        return "service"
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+def get_current_or_service_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> Any:
+    token = credentials.credentials
+    if token == settings.BOT_SERVICE_TOKEN:
+        return "service"
+    try:
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except DecodeError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    with Session(engine) as session:
+        user = session.get(User, int(user_id))
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        return user

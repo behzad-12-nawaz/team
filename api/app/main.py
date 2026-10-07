@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqlmodel import SQLModel
 
+from app.db import engine
 from app.engine import start_scheduler, stop_scheduler
 from app.routers import auth, prescriptions, doses, doctor_links, caregiver, reports
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    SQLModel.metadata.create_all(engine)
     start_scheduler()
     yield
     stop_scheduler()

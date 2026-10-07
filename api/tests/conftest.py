@@ -1,16 +1,19 @@
 import os
 import sys
+import tempfile
 
-os.environ["DATABASE_URL"] = "sqlite:///./test_dosecare.db"
-os.environ["JWT_SECRET"] = "test-secret-for-pytest-only"
+test_db_path = os.path.join(tempfile.gettempdir(), "dosecare_test_pytest.db")
+os.environ["DATABASE_URL"] = f"sqlite:///{test_db_path}"
+os.environ["JWT_SECRET"] = "test-secret-for-pytest-only-32bytes"
 os.environ["NOTIFIER"] = "console"
+os.environ["BOT_SERVICE_TOKEN"] = "test-bot-token-123"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import SQLModel, Session
 from fastapi.testclient import TestClient
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.config import settings
 from app.db import engine
@@ -21,8 +24,9 @@ from app.models import (
 from app.auth import hash_password
 from app.engine import stop_scheduler
 
+from app.main import app
 
-TEST_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_dosecare.db")
+
 OUTBOX_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outbox.log")
 
 
@@ -31,8 +35,8 @@ def test_db():
     """Create a fresh test database before each test and clean up after."""
     stop_scheduler()
 
-    if os.path.exists(TEST_DB_PATH):
-        os.remove(TEST_DB_PATH)
+    if os.path.exists(test_db_path):
+        os.remove(test_db_path)
     if os.path.exists(OUTBOX_PATH):
         os.remove(OUTBOX_PATH)
 
@@ -45,8 +49,8 @@ def test_db():
 
     stop_scheduler()
     engine.dispose()
-    if os.path.exists(TEST_DB_PATH):
-        os.remove(TEST_DB_PATH)
+    if os.path.exists(test_db_path):
+        os.remove(test_db_path)
     if os.path.exists(OUTBOX_PATH):
         os.remove(OUTBOX_PATH)
 
@@ -60,11 +64,9 @@ def client(test_db):
     engine.dispose()
 
 
-# Import app AFTER env vars are set
-from app.main import app
-
-
 def _seed_data(session: Session):
+    future = datetime.utcnow() + timedelta(days=30)
+
     session.add(User(id=1, name="Ali Khan", phone="923001234567",
                      email="ali@example.com", role=UserRole.patient,
                      password_hash=hash_password("patient123"), invite_code="ALI-4821"))
@@ -101,7 +103,7 @@ def _seed_data(session: Session):
                      status=DoseStatus.NOTIFIED, reminder_count=2,
                      last_reminded_at=datetime(2026, 10, 5, 14, 50, 0), snoozed=False,
                      replied_at=None))
-    session.add(Dose(id=104, medicine_id=1, patient_id=1, scheduled_at=datetime(2026, 10, 6, 3, 0, 0),
+    session.add(Dose(id=104, medicine_id=1, patient_id=1, scheduled_at=future,
                      status=DoseStatus.SCHEDULED, reminder_count=0, last_reminded_at=None,
                      snoozed=False, replied_at=None))
     session.commit()

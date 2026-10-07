@@ -1,7 +1,10 @@
 import os
+import sys
 from datetime import datetime
+
 from passlib.context import CryptContext
 from sqlmodel import SQLModel, select, Session
+
 from app.config import settings
 from app.db import engine
 from app.models import (
@@ -10,6 +13,8 @@ from app.models import (
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+TABLES_WITH_ID = ["users", "doctor_links", "prescriptions", "medicines", "doses", "audit_log"]
 
 USERS = [
     {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@example.com", "role": UserRole.patient, "password": "patient123", "invite_code": "ALI-4821"},
@@ -46,8 +51,31 @@ def get_or_create(session: Session, model, defaults=None, **kwargs):
         return instance, True
 
 
+def _reset_sequences(session: Session):
+    for table in TABLES_WITH_ID:
+        session.exec(
+            text(
+                f"SELECT setval(pg_get_serial_sequence('{table}','id'), "
+                f"COALESCE((SELECT MAX(id) FROM {table}), 1), true)"
+            )
+        )
+    session.commit()
+
+
+from sqlalchemy import text
+
+
 def main():
     SQLModel.metadata.create_all(engine)
+    is_postgres = settings.DATABASE_URL.startswith("postgresql")
+
+    if is_postgres:
+        print("WARNING: Remote database detected.")
+        print("This will modify data in the remote database.")
+        if "--confirm-remote" not in sys.argv:
+            print("Run with --confirm-remote flag to proceed.")
+            sys.exit(1)
+
     with Session(engine) as session:
         for u in USERS:
             get_or_create(
@@ -65,6 +93,10 @@ def main():
         for d in DOSES:
             get_or_create(session, Dose, id=d["id"], defaults=d)
         session.commit()
+
+        if is_postgres:
+            _reset_sequences(session)
+
     print("seed done")
 
 

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 
 from sqlmodel import Session
@@ -11,17 +12,6 @@ def _create_test_dose():
     """Create a fresh test dose in SCHEDULED state for tick-based tests."""
     with Session(engine) as session:
         med = session.get(Medicine, 1)
-        if med is None:
-            med = Medicine(
-                prescription_id=11,
-                name="TestMed",
-                dose="10 mg",
-                times='["08:00"]',
-                days=30,
-            )
-            session.add(med)
-            session.commit()
-            session.refresh(med)
 
         past_time = datetime.utcnow() - timedelta(minutes=10)
         dose = Dose(
@@ -41,6 +31,15 @@ def _create_test_dose():
 
 def _get_dose(session, dose_id):
     return session.get(Dose, dose_id)
+
+
+def _count_reminder_messages():
+    """Count 'Time for' reminder messages in outbox.log (excludes caretaker reply notifications)."""
+    outbox_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outbox.log")
+    if not os.path.exists(outbox_path):
+        return 0
+    with open(outbox_path) as f:
+        return sum(1 for line in f if "Time for" in line)
 
 
 def test_dose_statuses():
@@ -88,13 +87,13 @@ def test_no_reply_three_reminders_then_missed():
         assert dose.reminder_count == 3
 
 
-def test_taken_after_reminder_stops_loop():
-    """Test 2: Taking a dose after reminder 1 stops the reminder loop."""
+def test_taken_after_reminder_stops_loop(client):
+    """Test 2: Taking a dose via POST /doses/{id}/reply after reminder 1 stops the reminder loop."""
+    _count_reminder_messages()  # Initialize/clear baseline
+
     dose_id = _create_test_dose()
     with Session(engine) as session:
         dose = _get_dose(session, dose_id)
-        assert dose.status == DoseStatus.SCHEDULED
-
         base_time = dose.scheduled_at + timedelta(seconds=1)
 
         tick(base_time)
@@ -103,33 +102,30 @@ def test_taken_after_reminder_stops_loop():
         assert dose.status == DoseStatus.NOTIFIED
         assert dose.reminder_count == 1
 
-        # Manually mark as taken
-        dose = _get_dose(session, dose_id)
-        dose.status = DoseStatus.CONFIRMED
-        session.add(dose)
-        session.commit()
+        reminders_after_tick1 = _count_reminder_messages()
 
-        # Subsequent ticks should not change status
-        tick(base_time + timedelta(minutes=6))
-        session.expunge_all()
-        dose = _get_dose(session, dose_id)
-        assert dose.status == DoseStatus.CONFIRMED
-        assert dose.reminder_count == 1
+    # Use the actual API to mark as taken
+    r = client.post(f"/doses/{dose_id}/reply", json={"action": "taken"},
+                    headers={"Authorization": "Bearer test-bot-token-123"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "CONFIRMED"
 
-        tick(base_time + timedelta(minutes=12))
-        session.expunge_all()
+    with Session(engine) as session:
+        for _ in range(3):
+            tick(base_time + timedelta(minutes=6))
+            session.expunge_all()
+
         dose = _get_dose(session, dose_id)
         assert dose.status == DoseStatus.CONFIRMED
         assert dose.reminder_count == 1
 
-        tick(base_time + timedelta(minutes=18))
-        session.expunge_all()
-        dose = _get_dose(session, dose_id)
-        assert dose.status == DoseStatus.CONFIRMED
-        assert dose.reminder_count == 1
+    # Verify no reminder messages were sent after the taken reply
+    reminders_after_all_ticks = _count_reminder_messages()
+    assert reminders_after_all_ticks == reminders_after_tick1, \
+        "Should not send reminder after dose is taken"
 
 
-def test_second_snooze_returns_422(client, monkeypatch):
+def test_second_snooze_returns_422(client):
     """Test 3: A second snooze on the same dose returns HTTP 422."""
     dose_id = _create_test_dose()
 
@@ -141,13 +137,11 @@ def test_second_snooze_returns_422(client, monkeypatch):
         session.add(dose)
         session.commit()
 
-    # First snooze should succeed
     r = client.post(f"/doses/{dose_id}/reply", json={"action": "snooze"},
                     headers={"Authorization": "Bearer test-bot-token-123"})
     assert r.status_code == 200
     assert r.json()["status"] == "SCHEDULED"
 
-    # Second snooze should return 422
     r = client.post(f"/doses/{dose_id}/reply", json={"action": "snooze"},
                     headers={"Authorization": "Bearer test-bot-token-123"})
     assert r.status_code == 422

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.engine import start_scheduler, stop_scheduler
-from app.routers import auth, prescriptions, doses, doctor_links, caregiver
+from app.routers import auth, prescriptions, doses, doctor_links, caregiver, reports
 
 
 @asynccontextmanager
@@ -19,6 +19,7 @@ app.include_router(prescriptions.router)
 app.include_router(doses.router)
 app.include_router(doctor_links.router)
 app.include_router(caregiver.router)
+app.include_router(reports.router)
 
 
 @app.get("/")

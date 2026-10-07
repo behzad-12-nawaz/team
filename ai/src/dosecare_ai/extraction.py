@@ -1,5 +1,6 @@
 from .config import is_mock_mode
 from .models import Extraction
+from .openai_clients import get_openai_client
 import json
 import base64
 
@@ -44,7 +45,6 @@ def extract_prescription(image_bytes: bytes) -> dict:
 
 def _extract_with_openai(image_bytes: bytes) -> dict:
     """Extract prescription data using OpenAI vision."""
-    from .openai_clients import get_openai_client
 
     try:
         client = get_openai_client()
@@ -64,10 +64,14 @@ def _extract_with_openai(image_bytes: bytes) -> dict:
                             "type": "input_text",
                             "text": (
                                 "Read this prescription image carefully. "
-                                "Return only structured prescription information. "
-                                "Never guess unreadable text. "
-                                "Mark unclear medicine information as unclear=true "
-                                "and explain it in warnings."
+                                "Return only structured prescription information as JSON. "
+                                "Never guess unreadable, blurry, cropped, or ambiguous text. "
+                                "If the prescription is too blurry or unclear to reliably read, "
+                                "mark the affected medicine as unclear=true. "
+                                "If the whole prescription cannot be reliably read, return an empty "
+                                "medicines list and explain the problem in warnings. "
+                                "Preserve all readable information exactly. "
+                                "Do not invent medicine names, doses, times, durations, or instructions."
                             ),
                         },
                         {
@@ -85,9 +89,8 @@ def _extract_with_openai(image_bytes: bytes) -> dict:
         return {"raw_response": response.output_text}
 
     except Exception as exc:
-        raise RuntimeError(
-            "Prescription extraction failed. Please try again."
-        ) from exc
+        print(f"OPENAI ERROR: {type(exc).__name__}: {exc}")
+        raise RuntimeError("Prescription extraction failed") from exc
 
 
 def _parse_extraction_response(raw_text: str) -> dict:
@@ -99,4 +102,52 @@ def _parse_extraction_response(raw_text: str) -> dict:
         raise ValueError("Invalid JSON response from AI") from exc
 
     extraction = Extraction.model_validate(data)
-    return extraction.model_dump()
+    result = extraction.model_dump()
+
+    result = _validate_medicine_names(result)
+    result = _validate_sanity_limits(result)
+
+    return result
+
+def _validate_medicine_names(extraction: dict) -> dict:
+    """Validate medicine names and add warnings for suspicious names."""
+
+    for medicine in extraction["medicines"]:
+        name = medicine["name"].strip()
+
+        if len(name) < 2:
+            medicine["unclear"] = True
+            extraction["warnings"].append(
+                "Medicine name is unclear or too short"
+            )
+
+        if len(name) > 100:
+            medicine["unclear"] = True
+            extraction["warnings"].append(
+                f"Medicine name is unusually long: {name}"
+            )
+
+    return extraction
+
+def _validate_sanity_limits(extraction: dict) -> dict:
+    """Check for unrealistic prescription values."""
+
+    if len(extraction["medicines"]) > 20:
+        extraction["warnings"].append(
+            "Prescription contains an unusually large number of medicines"
+        )
+
+    for medicine in extraction["medicines"]:
+        if medicine["days"] > 365:
+            medicine["unclear"] = True
+            extraction["warnings"].append(
+                f"Duration for {medicine['name']} is unusually long"
+            )
+
+        if len(medicine["times"]) > 12:
+            medicine["unclear"] = True
+            extraction["warnings"].append(
+                f"Too many daily times for {medicine['name']}"
+            )
+
+    return extraction

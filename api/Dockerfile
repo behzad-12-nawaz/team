@@ -18,6 +18,8 @@ RUN uv sync --frozen --no-install-project
 COPY app/ ./app/
 COPY seed.py ./
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 EXPOSE 8000
 
 # NOTE: Do NOT add --workers. The APScheduler reminder engine runs background

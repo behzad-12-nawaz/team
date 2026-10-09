@@ -60,7 +60,7 @@ def create_doctor_link(
             )
         ).first()
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Link already exists")
+            return {"id": existing.id, "status": existing.status, "patient_id": existing.patient_id}
 
         link = DoctorLink(
             patient_id=patient.id,
@@ -129,6 +129,9 @@ def delete_doctor_link(
         link = session.get(DoctorLink, link_id)
         if not link:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+        if link.status == LinkStatus.revoked:
+            return {"id": link.id, "status": link.status}
+
         verify_patient_access(link.patient_id, current_user)
 
         link.status = LinkStatus.revoked

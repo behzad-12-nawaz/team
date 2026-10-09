@@ -1,0 +1,150 @@
+{
+  "login": {
+    "access_token": "mock-token-doctor-dr-sarah",
+    "role": "doctor",
+    "user_id": 5,
+    "name": "Dr. Sarah Ahmed"
+  },
+  "doctor_patients": [
+    {
+      "id": 1,
+      "name": "Ali Khan",
+      "phone": "923001234567",
+      "link_id": 7,
+      "adherence_7d": 86,
+      "status": "active",
+      "age": 68,
+      "condition": "Type 2 Diabetes & Hypertension"
+    },
+    {
+      "id": 3,
+      "name": "Amina Bibi",
+      "phone": "923007654321",
+      "link_id": 9,
+      "adherence_7d": 100,
+      "status": "active",
+      "age": 72,
+      "condition": "Cardiovascular Health"
+    }
+  ],
+  "pending_links": [
+    {
+      "id": 14,
+      "patient_id": 4,
+      "patient_name": "Tariq Mahmood",
+      "invite_code": "TAR-9042",
+      "status": "pending",
+      "created_at": "2026-10-06T10:15:00Z"
+    }
+  ],
+  "doctor_link_created": {
+    "id": 7,
+    "status": "pending",
+    "patient_id": 1
+  },
+  "doctor_link_consent": {
+    "id": 7,
+    "status": "active"
+  },
+  "doctor_link_revoked": {
+    "id": 7,
+    "status": "revoked"
+  },
+  "invite_code": {
+    "invite_code": "ALI-4821"
+  },
+  "active_prescriptions": [
+    {
+      "id": 11,
+      "patient_id": 1,
+      "status": "active",
+      "version": 1,
+      "prescribed_by": null,
+      "created_at": "2026-09-25T08:00:00Z",
+      "medicines": [
+        {
+          "name": "Metformin",
+          "dose": "500 mg",
+          "times": ["08:00", "20:00"],
+          "days": 30,
+          "instructions": "after meals"
+        },
+        {
+          "name": "Amlodipine",
+          "dose": "5 mg",
+          "times": ["09:00"],
+          "days": 30,
+          "instructions": "morning with water"
+        }
+      ]
+    }
+  ],
+  "doctor_change_created": {
+    "id": 12,
+    "status": "waiting_patient",
+    "version": 2
+  },
+  "doses": [
+    {
+      "id": 101,
+      "medicine": "Metformin",
+      "dose": "500 mg",
+      "scheduled_at": "2026-10-05T03:00:00Z",
+      "status": "CONFIRMED",
+      "reminder_count": 1
+    },
+    {
+      "id": 102,
+      "medicine": "Amlodipine",
+      "dose": "5 mg",
+      "scheduled_at": "2026-10-05T04:00:00Z",
+      "status": "MISSED",
+      "reminder_count": 3
+    },
+    {
+      "id": 103,
+      "medicine": "Metformin",
+      "dose": "500 mg",
+      "scheduled_at": "2026-10-05T15:00:00Z",
+      "status": "NOTIFIED",
+      "reminder_count": 2
+    },
+    {
+      "id": 104,
+      "medicine": "Metformin",
+      "dose": "500 mg",
+      "scheduled_at": "2026-10-06T03:00:00Z",
+      "status": "SCHEDULED",
+      "reminder_count": 0
+    },
+    {
+      "id": 105,
+      "medicine": "Amlodipine",
+      "dose": "5 mg",
+      "scheduled_at": "2026-10-06T04:00:00Z",
+      "status": "SCHEDULED",
+      "reminder_count": 0
+    }
+  ],
+  "weekly_report": {
+    "patient_name": "Ali Khan",
+    "week_start": "2026-09-28",
+    "week_end": "2026-10-04",
+    "adherence": 86,
+    "rows": [
+      {"date": "2026-09-28", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-09-28", "medicine": "Amlodipine 5 mg", "status": "CONFIRMED"},
+      {"date": "2026-09-29", "medicine": "Metformin 500 mg", "status": "SKIPPED"},
+      {"date": "2026-09-29", "medicine": "Amlodipine 5 mg", "status": "CONFIRMED"},
+      {"date": "2026-09-30", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-09-30", "medicine": "Amlodipine 5 mg", "status": "MISSED"},
+      {"date": "2026-10-01", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-10-02", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-10-03", "medicine": "Metformin 500 mg", "status": "CONFIRMED"},
+      {"date": "2026-10-04", "medicine": "Metformin 500 mg", "status": "CONFIRMED"}
+    ]
+  },
+  "error_403": {
+    "detail": "Access to this patient has ended"
+  }
+}

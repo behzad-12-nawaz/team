@@ -125,10 +125,13 @@ def confirm_prescription(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         verify_patient_access(prescription.patient_id, current_user)
 
-        if prescription.status not in (PrescriptionStatus.waiting_patient, PrescriptionStatus.draft, PrescriptionStatus.active):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot confirm")
-
         if prescription.status == PrescriptionStatus.active:
+            session.commit()
+            return {"id": prescription.id, "status": "active", "doses_created": 0}
+
+        if prescription.status == PrescriptionStatus.rejected:
+            prescription.status = PrescriptionStatus.active
+            session.add(prescription)
             session.commit()
             return {"id": prescription.id, "status": "active", "doses_created": 0}
 

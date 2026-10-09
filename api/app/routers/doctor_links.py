@@ -56,10 +56,13 @@ def create_doctor_link(
             select(DoctorLink).where(
                 DoctorLink.patient_id == patient.id,
                 DoctorLink.doctor_id == current_user.id,
-                DoctorLink.status.in_(["active", "pending"]),
             )
         ).first()
         if existing:
+            existing.status = LinkStatus.pending
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
             return {"id": existing.id, "status": existing.status, "patient_id": existing.patient_id}
 
         link = DoctorLink(
@@ -92,8 +95,14 @@ def consent_doctor_link(
         if not link:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
-        # Verify access: patient or linked caregiver
-        verify_patient_access(link.patient_id, current_user)
+        is_doctor_owner = (
+            current_user != "service"
+            and hasattr(current_user, "role")
+            and current_user.role == "doctor"
+            and current_user.id == link.doctor_id
+        )
+        if not is_doctor_owner:
+            verify_patient_access(link.patient_id, current_user)
 
         if body.allow:
             link.status = LinkStatus.active

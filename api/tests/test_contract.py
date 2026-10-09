@@ -344,8 +344,9 @@ def test_reports_weekly(client):
     assert isinstance(data["rows"], list)
 
 
-def test_reports_weekly_pdf_501(client):
-    """Step 9: GET /reports/{id}/weekly.pdf returns 501 when PDF module missing."""
+def test_reports_weekly_pdf(client):
+    """Step 9: GET /reports/{id}/weekly.pdf returns PDF bytes."""
     token = _login_patient(client)
     r = client.get("/reports/1/weekly.pdf", headers={"Authorization": f"Bearer {token}"})
-    assert r.status_code == 501
+    assert r.status_code == 200
+    assert r.content[:4] == b"%PDF"

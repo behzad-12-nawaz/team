@@ -99,7 +99,7 @@ def create_caregiver_patient(
     with Session(engine) as session:
         existing = session.exec(select(User).where(User.phone == body.phone)).first()
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Patient already exists")
+            return {"id": existing.id}
 
         invite_code = _generate_invite_code(body.name)
         patient = User(

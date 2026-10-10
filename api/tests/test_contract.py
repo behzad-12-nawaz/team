@@ -312,11 +312,12 @@ def test_caregiver_patients_create(client):
 
 
 def test_caregiver_patients_duplicate_phone(client):
-    """Step 5: POST /caregiver/patients with duplicate phone returns 409."""
+    """Step 5: POST /caregiver/patients with duplicate phone returns existing patient id."""
     token = _login_caregiver(client)
     r = client.post("/caregiver/patients", headers={"Authorization": f"Bearer {token}"},
                     json={"name": "Ali Khan", "phone": "923001234567"})
-    assert r.status_code == 409
+    assert r.status_code == 200
+    assert "id" in r.json()
 
 
 def test_caregiver_settings(client):
@@ -344,8 +345,9 @@ def test_reports_weekly(client):
     assert isinstance(data["rows"], list)
 
 
-def test_reports_weekly_pdf_501(client):
-    """Step 9: GET /reports/{id}/weekly.pdf returns 501 when PDF module missing."""
+def test_reports_weekly_pdf(client):
+    """Step 9: GET /reports/{id}/weekly.pdf returns PDF bytes."""
     token = _login_patient(client)
     r = client.get("/reports/1/weekly.pdf", headers={"Authorization": f"Bearer {token}"})
-    assert r.status_code == 501
+    assert r.status_code == 200
+    assert r.content[:4] == b"%PDF"

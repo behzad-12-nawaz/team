@@ -89,6 +89,10 @@ def _seed_data(session: Session):
                          times='["08:00","20:00"]', days=30, instructions="after meals"))
     session.add(Medicine(id=2, prescription_id=11, name="Amlodipine", dose="5 mg",
                          times='["09:00"]', days=30, instructions=None))
+    session.add(Prescription(id=15, patient_id=1, prescribed_by=None,
+                             status=PrescriptionStatus.active, version=1, supersedes_id=None))
+    session.add(Medicine(id=3, prescription_id=15, name="Vitamin D", dose="1000 IU",
+                         times='["09:00"]', days=30, instructions=None))
     session.commit()
 
     session.add(Dose(id=101, medicine_id=1, patient_id=1, scheduled_at=datetime(2026, 10, 5, 3, 0, 0),

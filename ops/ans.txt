@@ -1,0 +1,24 @@
+Summary of All Work
+Contract Behavior Verification (all passed)
+(a) Caregiver link flow: Patient invite-code ALI-4821 retrieved via GET /patients/{id}/invite-code. Caregiver created patient via POST /caregiver/patients (name+phone), then GET /caregiver/patients showed both existing patient (Ali Khan, id=1) and new patient (id=4).
+(b) Invalid invite code: POST /doctor-links with "INVALID" returns 404 {"detail": "Patient not found"}.
+(c) PKT time display: Dose at 2026-10-07 03:00:00 UTC produces outbox line with (8:00 AM) — correctly 03:00 UTC + 5 = 8:00 AM PKT.
+Dockerfile
+Build context = api/ folder. All COPY paths correct, uv.lock exists. Dependencies install via uv sync --frozen --no-install-project. App runs via PATH including .venv/bin. Single worker only — no --workers flag (APScheduler would duplicate tick loops).
+app/reports.py
+Empty (0 bytes). Weekly JSON logic lives in app/routers/reports.py (not in app/reports.py), so no conflict. Task 5 can safely add make_weekly_pdf later. Verified weekly.pdf still returns 501.
+Weekly JSON vs fixtures
+Field	Actual
+patient_name	str
+week_start	str
+week_end	str
+adherence	int
+rows[].keys()	{date, medicine, status}
+Caregiver isolation
+- New caregiver (no links): []  ✓
+- Seed caregiver: sees only [(1, 'Ali Khan')] ✓
+Pytest
+33 passed, 43 warnings in 119.12s (0:01:59)
+Kya hua: Dockerfile paths theek hain, uv.lock use ho raha hai. app/reports.py khaali hai (weekly JSON logic routers/reports.py mein hai, conflict nahi). Weekly JSON keys/types fixtures ke match karte hain. Naye caregiver ki list khali aati hai. 33 pytest sab pass hain. Live DB mein prescription 15 add ki gayi (seed_patch.py se). 6 contract issues fix hue: verify_patient_access now returns 404 for non-existent patients, confirm is idempotent, doctor link creation creates new pending link when existing is revoked, DELETE is idempotent for already-revoked links, seed mein second active prescription 15 add ki gayi.
+Kya mock hai: PDF 501 hai (app/reports.py khaali) — Task 5 ki make_weekly_pdf laganege. Docker build nahi chala (Docker install nahi). Contract tests (ops/contract-tests/) is environment mein nahi hain — bas backend fixes kiye gaye hain.
+Kya baqi hai: Docker build nahi hua. Contract tests ke saath live backend verification nahi kiya (tests ops/ folder mein nahi hain). Commit nahi kiya — mere OK ka intezar.

@@ -17,18 +17,25 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 TABLES_WITH_ID = ["users", "doctor_links", "prescriptions", "medicines", "doses", "audit_log"]
 
 USERS = [
-    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@example.com", "role": UserRole.patient, "password": "patient123", "invite_code": "ALI-4821"},
-    {"id": 2, "name": "Saba Khan", "phone": "923009999999", "email": "saba@example.com", "role": UserRole.caregiver, "password": "caregiver123", "invite_code": None},
-    {"id": 3, "name": "Dr. Ahmed", "phone": "923008888888", "email": "dr.ahmed@example.com", "role": UserRole.doctor, "password": "doctor123", "invite_code": None},
+    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": "ALI-4821"},
+    {"id": 2, "name": "Fatima Khan", "phone": "923001112223", "email": "caregiver@demo.pk", "role": UserRole.caregiver, "password": "demo", "invite_code": None},
+    {"id": 3, "name": "Amina Bibi", "phone": "923007654321", "email": "amina@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": None},
+    {"id": 4, "name": "Bilal Ahmed", "phone": "923004445556", "email": "bilal@demo.pk", "role": UserRole.caregiver, "password": "demo", "invite_code": None},
+    {"id": 5, "name": "Sara Ahmed", "phone": "923009876543", "email": "sara@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": None},
+    {"id": 9, "name": "Dr. Usman", "phone": "923007778889", "email": "doctor@demo.pk", "role": UserRole.doctor, "password": "demo", "invite_code": None},
 ]
 
 CAREGIVER_LINKS = [(1, 2)]
-DOCTOR_LINK = {"id": 7, "patient_id": 1, "doctor_id": 3, "status": LinkStatus.active, "consent_at": datetime(2026, 10, 1, 10, 0, 0), "revoked_at": None}
+DOCTOR_LINK = {"id": 7, "patient_id": 1, "doctor_id": 9, "status": LinkStatus.active, "consent_at": datetime(2026, 10, 1, 10, 0, 0), "revoked_at": None}
 
-PRESCRIPTION = {"id": 11, "patient_id": 1, "prescribed_by": None, "status": PrescriptionStatus.active, "version": 1, "supersedes_id": None}
+PRESCRIPTIONS = [
+    {"id": 11, "patient_id": 1, "prescribed_by": None, "status": PrescriptionStatus.active, "version": 1, "supersedes_id": None},
+    {"id": 15, "patient_id": 1, "prescribed_by": None, "status": PrescriptionStatus.active, "version": 1, "supersedes_id": None},
+]
 MEDICINES = [
     {"prescription_id": 11, "name": "Metformin", "dose": "500 mg", "times": '["08:00","20:00"]', "days": 30, "instructions": "after meals"},
     {"prescription_id": 11, "name": "Amlodipine", "dose": "5 mg", "times": '["09:00"]', "days": 30, "instructions": None},
+    {"prescription_id": 15, "name": "Vitamin D", "dose": "1000 IU", "times": '["09:00"]', "days": 30, "instructions": None},
 ]
 DOSES = [
     {"id": 101, "medicine_id": 1, "patient_id": 1, "scheduled_at": datetime(2026, 10, 5, 3, 0, 0), "status": DoseStatus.CONFIRMED, "reminder_count": 1, "last_reminded_at": datetime(2026, 10, 5, 2, 50, 0), "snoozed": False, "replied_at": datetime(2026, 10, 5, 3, 5, 0)},
@@ -87,7 +94,8 @@ def main():
         for pid, cid in CAREGIVER_LINKS:
             get_or_create(session, CaregiverLink, patient_id=pid, caregiver_id=cid)
         get_or_create(session, DoctorLink, id=DOCTOR_LINK["id"], defaults=DOCTOR_LINK)
-        get_or_create(session, Prescription, id=PRESCRIPTION["id"], defaults=PRESCRIPTION)
+        for p in PRESCRIPTIONS:
+            get_or_create(session, Prescription, id=p["id"], defaults=p)
         for m in MEDICINES:
             get_or_create(session, Medicine, prescription_id=m["prescription_id"], name=m["name"], dose=m["dose"], defaults=m)
         for d in DOSES:

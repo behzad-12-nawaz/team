@@ -64,6 +64,10 @@ def require_role(*allowed_roles: str) -> Callable[[User], User]:
 def verify_patient_access(patient_id: int, current_user: User | str):
     if current_user == "service":
         return
+    with Session(engine) as session:
+        patient = session.get(User, patient_id)
+        if patient is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     if current_user.role == "patient":
         if current_user.id != patient_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
@@ -91,7 +95,7 @@ def verify_patient_access(patient_id: int, current_user: User | str):
                 session.commit()
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access to this patient has ended")
     else:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        raise HTTPException(status_code=status.HTTP_403_FORIDDEN, detail="Forbidden")
 
 
 def patient_access(

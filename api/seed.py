@@ -17,13 +17,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 TABLES_WITH_ID = ["users", "doctor_links", "prescriptions", "medicines", "doses", "audit_log"]
 
 USERS = [
-    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@example.com", "role": UserRole.patient, "password": "patient123", "invite_code": "ALI-4821"},
-    {"id": 2, "name": "Saba Khan", "phone": "923009999999", "email": "saba@example.com", "role": UserRole.caregiver, "password": "caregiver123", "invite_code": None},
-    {"id": 3, "name": "Dr. Ahmed", "phone": "923008888888", "email": "dr.ahmed@example.com", "role": UserRole.doctor, "password": "doctor123", "invite_code": None},
+    {"id": 1, "name": "Ali Khan", "phone": "923001234567", "email": "ali@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": "ALI-4821"},
+    {"id": 2, "name": "Fatima Khan", "phone": "923001112223", "email": "caregiver@demo.pk", "role": UserRole.caregiver, "password": "demo", "invite_code": None},
+    {"id": 3, "name": "Amina Bibi", "phone": "923007654321", "email": "amina@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": None},
+    {"id": 4, "name": "Bilal Ahmed", "phone": "923004445556", "email": "bilal@demo.pk", "role": UserRole.caregiver, "password": "demo", "invite_code": None},
+    {"id": 5, "name": "Sara Ahmed", "phone": "923009876543", "email": "sara@demo.pk", "role": UserRole.patient, "password": "demo", "invite_code": None},
+    {"id": 9, "name": "Dr. Usman", "phone": "923007778889", "email": "doctor@demo.pk", "role": UserRole.doctor, "password": "demo", "invite_code": None},
 ]
 
 CAREGIVER_LINKS = [(1, 2)]
-DOCTOR_LINK = {"id": 7, "patient_id": 1, "doctor_id": 3, "status": LinkStatus.active, "consent_at": datetime(2026, 10, 1, 10, 0, 0), "revoked_at": None}
+DOCTOR_LINK = {"id": 7, "patient_id": 1, "doctor_id": 9, "status": LinkStatus.active, "consent_at": datetime(2026, 10, 1, 10, 0, 0), "revoked_at": None}
 
 PRESCRIPTION = {"id": 11, "patient_id": 1, "prescribed_by": None, "status": PrescriptionStatus.active, "version": 1, "supersedes_id": None}
 MEDICINES = [
